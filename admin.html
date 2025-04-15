@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Portal - HMS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #34a853;
+        }
+        .nav-link {
+            display: inline-block;
+            padding: 8px 16px;
+            color: #34a853;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .request-section {
+            margin-bottom: 30px;
+        }
+        .request-list {
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 10px;
+        }
+        .request-item {
+            padding: 15px;
+            border-bottom: 1px solid #ddd;
+        }
+        .request-item:last-child {
+            border-bottom: none;
+        }
+        .request-details {
+            margin-bottom: 10px;
+        }
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        .approve-btn {
+            background-color: #34a853;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .reject-btn {
+            background-color: #ea4335;
+            color: white;
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .no-requests {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="nav-link">← Back to Home</a>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+        <h1>Admin Portal</h1>
+
+        <div class="request-section">
+            <h2>Add New Student</h2>
+            <form id="addStudentForm" onsubmit="addStudent(event)">
+                <div class="form-group">
+                    <label for="studentName">Student Name:</label>
+                    <input type="text" id="studentName" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentUSN">USN:</label>
+                    <input type="text" id="studentUSN" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentDOB">Date of Birth:</label>
+                    <input type="date" id="studentDOB" required>
+                </div>
+                <button type="submit" class="approve-btn">Add Student</button>
+            </form>
+            <div id="studentAddedMessage" style="display: none; color: green; margin-top: 10px;">
+                Student added successfully!
+            </div>
+        </div>
+
+        <div class="request-section">
+            <h2>Room Applications</h2>
+            <div id="roomRequests" class="request-list">
+                <!-- Room requests will be loaded here -->
+            </div>
+        </div>
+
+        <div class="request-section">
+            <h2>Complaints</h2>
+            <div id="complaints" class="request-list">
+                <!-- Complaints will be loaded here -->
+            </div>
+        </div>
+
+        <div class="request-section">
+            <h2>Cleaning Requests</h2>
+            <div id="cleaningRequests" class="request-list">
+                <!-- Cleaning requests will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        function checkAuth() {
+            if (!localStorage.getItem('adminLoggedIn')) {
+                window.location.href = 'index.html';
+            }
+        }
+
+        function logout() {
+            localStorage.removeItem('adminLoggedIn');
+            window.location.href = 'index.html';
+        }
+
+        // Function to load and display requests
+        async function loadRequests(type, containerId) {
+            const container = document.getElementById(containerId);
+            try {
+                let endpoint = '';
+                switch(type) {
+                    case 'roomRequests':
+                        endpoint = '/api/admin/room-applications';
+                        break;
+                    case 'complaints':
+                        endpoint = '/api/admin/complaints';
+                        break;
+                    case 'cleaningRequests':
+                        endpoint = '/api/admin/cleaning-requests';
+                        break;
+                }
+
+                const response = await fetch(endpoint);
+                const requests = await response.json();
+
+                if (requests.length === 0) {
+                    container.innerHTML = '<div class="no-requests">No pending requests</div>';
+                    return;
+                }
+
+                container.innerHTML = requests.map(request => {
+                    let details = '';
+                    switch(type) {
+                        case 'roomRequests':
+                            details = `
+                                <strong>Student Name:</strong> ${request.student_name}<br>
+                                <strong>Student ID:</strong> ${request.usn}<br>
+                                <strong>Room Type:</strong> ${request.room_type}`;
+                            break;
+                        case 'complaints':
+                            details = `
+                                <strong>Student Name:</strong> ${request.student_name}<br>
+                                <strong>Description:</strong> ${request.description}`;
+                            break;
+                        case 'cleaningRequests':
+                            details = `
+                                <strong>Student Name:</strong> ${request.student_name}<br>
+                                <strong>Room Number:</strong> ${request.room_number}`;
+                            break;
+                    }
+
+                    return `
+                        <div class="request-item">
+                            <div class="request-details">${details}</div>
+                            <div class="action-buttons">
+                                <button class="approve-btn" onclick="updateStatus('${type}', ${request.id}, '${type === 'complaints' ? 'resolved' : (type === 'cleaningRequests' ? 'completed' : 'approved')}')">Approve</button>
+                                <button class="reject-btn" onclick="updateStatus('${type}', ${request.id}, 'rejected')">Reject</button>
+                            </div>
+                        </div>`;
+                }).join('');
+            } catch (error) {
+                container.innerHTML = '<div class="no-requests">Error loading requests</div>';
+                console.error('Error loading requests:', error);
+            }
+        }
+
+        // Function to add new student
+        async function addStudent(event) {
+            event.preventDefault();
+            const name = document.getElementById('studentName').value;
+            const usn = document.getElementById('studentUSN').value;
+            const dob = document.getElementById('studentDOB').value;
+
+            try {
+                const response = await fetch('/api/admin/add-student', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ name, usn, dob })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    document.getElementById('studentAddedMessage').style.display = 'block';
+                    document.getElementById('addStudentForm').reset();
+                    setTimeout(() => {
+                        document.getElementById('studentAddedMessage').style.display = 'none';
+                    }, 3000);
+                } else {
+                    alert('Failed to add student: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error adding student:', error);
+                alert('Server error. Please try again later.');
+            }
+        }
+
+        // Function to update request status
+        // In your admin.html file, look for the function that handles status updates
+        // It might look something like this:
+        
+        async function updateStatus(type, id, status) {
+            try {
+                let requestData = { type, id, status };
+                
+                // For room requests that are being approved, we need to prompt for room number
+                if (type === 'roomRequests' && status === 'approved') {
+                    const roomNumber = prompt('Please enter the room number:');
+                    if (!roomNumber) {
+                        alert('Room number is required for approval');
+                        return;
+                    }
+                    requestData.room_number = roomNumber;
+                }
+
+                const response = await fetch('/api/admin/update-status', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+        
+                const data = await response.json();
+                if (data.success) {
+                    alert('Status updated successfully');
+                    // Refresh all requests to ensure UI is up to date
+                    loadAllRequests();
+                } else {
+                    alert('Failed to update status: ' + data.message);
+                }
+            } catch (error) {
+                console.error('Error updating status:', error);
+                alert('Error updating status. Please try again.');
+            }
+        }
+
+        // Load all types of requests
+        function loadAllRequests() {
+            loadRequests('roomRequests', 'roomRequests');
+            loadRequests('complaints', 'complaints');
+            loadRequests('cleaningRequests', 'cleaningRequests');
+        }
+
+        // Initial load
+        checkAuth();
+        loadAllRequests();
+
+        // Refresh data every 30 seconds
+        setInterval(loadAllRequests, 30000);
+    </script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hostel Management System</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            text-align: center;
+            color: #1a73e8;
+        }
+        .login-sections {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            gap: 20px;
+        }
+        .login-section {
+            flex: 1;
+            min-width: 300px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .view-rooms {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .view-rooms a {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #34a853;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+        }
+        .error-message {
+            color: #ea4335;
+            margin-top: 5px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Hostel Management System</h1>
+        
+        <div class="login-sections">
+            <div class="login-section">
+                <h2>Student Login</h2>
+                <form id="studentLoginForm" onsubmit="return handleStudentLogin(event)">
+                    <div class="form-group">
+                        <label for="usn">USN (Unique Student Number)</label>
+                        <input type="text" id="usn" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="dob">Date of Birth</label>
+                        <input type="date" id="dob" required>
+                    </div>
+                    <div class="error-message" id="studentError"></div>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+
+            <div class="login-section">
+                <h2>Admin Login</h2>
+                <form id="adminLoginForm" onsubmit="return handleAdminLogin(event)">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" required>
+                    </div>
+                    <div class="error-message" id="adminError"></div>
+                    <button type="submit">Login</button>
+                </form>
+            </div>
+        </div>
+
+        <div class="view-rooms">
+            <h2>Looking for a Room?</h2>
+            <p>You can view available rooms and apply without logging in</p>
+            <a href="rooms.html">View Rooms</a>
+        </div>
+    </div>
+
+    <script>
+        async function handleStudentLogin(event) {
+            event.preventDefault();
+            const usn = document.getElementById('usn').value;
+            const dob = document.getElementById('dob').value;
+            const errorElement = document.getElementById('studentError');
+
+            // Simple validation
+            if (!usn || !dob) {
+                showError(errorElement, 'Please fill in all fields');
+                return false;
+            }
+
+            try {
+                const response = await fetch('/api/student/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ usn, dob })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    // Store login status
+                    localStorage.setItem('currentStudent', JSON.stringify(data.student));
+                    window.location.href = 'student.html';
+                } else {
+                    showError(errorElement, data.message || 'Invalid USN or Date of Birth');
+                }
+            } catch (error) {
+                showError(errorElement, 'Server error. Please try again later.');
+            }
+            return false;
+        }
+
+        async function handleAdminLogin(event) {
+            event.preventDefault();
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('adminError');
+
+            try {
+                const response = await fetch('/api/admin/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    window.location.href = 'admin.html';
+                } else {
+                    showError(errorElement, data.message || 'Invalid username or password');
+                }
+            } catch (error) {
+                showError(errorElement, 'Server error. Please try again later.');
+            }
+            return false;
+        }
+
+        function showError(element, message) {
+            element.style.display = 'block';
+            element.textContent = message;
+            setTimeout(() => {
+                element.style.display = 'none';
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

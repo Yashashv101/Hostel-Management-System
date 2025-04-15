@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Portal - HMS</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f0f2f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        h1, h2 {
+            color: #1a73e8;
+        }
+        .nav-link {
+            display: inline-block;
+            padding: 8px 16px;
+            color: #1a73e8;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+        .form-section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        button {
+            background-color: #1a73e8;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .success-message {
+            color: #34a853;
+            margin-top: 10px;
+            display: none;
+        }
+        .logout-btn {
+            float: right;
+            background-color: #ea4335;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="nav-link">← Back to Home</a>
+        <button onclick="logout()" class="logout-btn">Logout</button>
+        <h1>Student Portal</h1>
+        <div id="studentInfo"></div>
+
+        <div class="form-section">
+            <h2>Register Complaint</h2>
+            <form id="complaintForm" onsubmit="return submitComplaint(event)">
+                <div class="form-group">
+                    <label for="complaintType">Type of Complaint</label>
+                    <select id="complaintType" required>
+                        <option value="">Select type</option>
+                        <option value="maintenance">Maintenance</option>
+                        <option value="facility">Facility</option>
+                        <option value="food">Food</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="complaintDescription">Description</label>
+                    <textarea id="complaintDescription" rows="4" required></textarea>
+                </div>
+                <button type="submit">Submit Complaint</button>
+                <div class="success-message" id="complaintSuccess">Complaint submitted successfully!</div>
+            </form>
+        </div>
+
+        <div class="form-section">
+            <h2>Request Room Cleaning</h2>
+            <form id="cleaningForm" onsubmit="return submitCleaningRequest(event)">
+                <div class="form-group">
+                    <label for="roomNumber">Room Number</label>
+                    <input type="text" id="roomNumber" required>
+                </div>
+                <div class="form-group">
+                    <label for="cleaningDate">Preferred Date</label>
+                    <input type="date" id="cleaningDate" required>
+                </div>
+                <button type="submit">Request Cleaning</button>
+                <div class="success-message" id="cleaningSuccess">Cleaning request submitted successfully!</div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Check authentication
+        function checkAuth() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            if (!currentStudent) {
+                window.location.href = 'index.html';
+                return;
+            }
+            document.getElementById('studentInfo').innerHTML = `<p>Welcome, ${currentStudent.name} (${currentStudent.usn})</p>`;
+        }
+
+        async function submitComplaint(event) {
+            event.preventDefault();
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const complaintData = {
+                usn: currentStudent.usn,
+                complaint_text: document.getElementById('complaintDescription').value
+            };
+
+            try {
+                // Send to server
+                const response = await fetch('/api/complaint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(complaintData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    const successMessage = document.getElementById('complaintSuccess');
+                    successMessage.style.display = 'block';
+                    event.target.reset();
+
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error submitting complaint:', error);
+                alert('Failed to submit complaint. Please try again.');
+            }
+
+            return false;
+        }
+
+        async function submitCleaningRequest(event) {
+            event.preventDefault();
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const request = {
+                roomNumber: document.getElementById('roomNumber').value,
+                date: document.getElementById('cleaningDate').value,
+                usn: currentStudent.usn
+            };
+
+            try {
+                const response = await fetch('/api/cleaning-request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    const successMessage = document.getElementById('cleaningSuccess');
+                    successMessage.style.display = 'block';
+                    event.target.reset();
+
+                    setTimeout(() => {
+                        successMessage.style.display = 'none';
+                    }, 3000);
+                } else {
+                    alert('Error: ' + result.message);
+                }
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                alert('Failed to submit request. Please try again.');
+            }
+
+            return false;
+        }
+
+        function logout() {
+            localStorage.removeItem('currentStudent');
+            window.location.href = 'index.html';
+        }
+
+        // Check authentication on page load
+        checkAuth();
+    </script>
+</body>
+</html>
