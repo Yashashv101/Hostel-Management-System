@@ -37,10 +37,10 @@ app.post('/api/admin/login', async (req, res) => {
 // Add new student (Admin only)
 app.post('/api/admin/add-student', async (req, res) => {
     try {
-        const { usn, name, dob } = req.body;
+        const { usn, name, dob, branch, phone_number, parent_phone, room_id } = req.body;
         
         // Validate input
-        if (!usn || !name || !dob) {
+        if (!usn || !name || !dob || !branch || !phone_number || !parent_phone || !room_id) {
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
 
@@ -50,11 +50,54 @@ app.post('/api/admin/add-student', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Student with this USN already exists' });
         }
 
-        await db.execute(
-            'INSERT INTO students (usn, name, dob) VALUES (?, ?, ?)',
-            [usn, name, dob]
+        // Check room capacity
+        const [roomCheck] = await db.execute(
+            'SELECT current_occupancy, capacity FROM rooms WHERE room_id = ?',
+            [room_id]
         );
-        res.json({ success: true, message: 'Student added successfully' });
+
+        if (roomCheck.length === 0) {
+            return res.status(400).json({ success: false, message: 'Invalid room selected' });
+        }
+
+        if (roomCheck[0].current_occupancy >= roomCheck[0].capacity) {
+            return res.status(400).json({ success: false, message: 'Selected room is full' });
+        }
+
+        // Get a connection from the pool for transaction
+        const connection = await db.getConnection();
+        
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+            
+            // Insert student
+            await connection.execute(
+                'INSERT INTO students (usn, name, dob, branch, phone_number, parent_phone, room_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                [usn, name, dob, branch, phone_number, parent_phone, room_id]
+            );
+
+            // Add room occupant
+            await connection.execute(
+                'INSERT INTO room_occupants (room_id, student_usn) VALUES (?, ?)',
+                [room_id, usn]
+            );
+
+            // Update room occupancy
+            await connection.execute(
+                'UPDATE rooms SET current_occupancy = (SELECT COUNT(*) FROM room_occupants WHERE room_id = ?), status = CASE WHEN (SELECT COUNT(*) FROM room_occupants WHERE room_id = ?) >= 3 THEN "full" ELSE "available" END WHERE room_id = ?',
+                [room_id, room_id, room_id]
+            );
+
+            await connection.commit();
+            res.json({ success: true, message: 'Student added successfully' });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            // Release the connection back to the pool
+            connection.release();
+        }
     } catch (error) {
         console.error('Error adding student:', error);
         if (error.code === 'ER_DUP_ENTRY') {
@@ -65,54 +108,21 @@ app.post('/api/admin/add-student', async (req, res) => {
     }
 });
 
-// Submit room application
-app.post('/api/room-application', async (req, res) => {
+// Search student by USN
+app.post('/api/admin/search-student', async (req, res) => {
     try {
-        const { usn, room_type } = req.body;
-
-        // Validate input
-        if (!usn || !room_type) {
-            return res.status(400).json({ success: false, message: 'USN and room type are required' });
-        }
-
-        // Check if student exists
-        const [student] = await db.execute('SELECT usn FROM students WHERE usn = ?', [usn]);
-        if (student.length === 0) {
-            return res.status(400).json({ success: false, message: 'Student not found. Please register first.' });
-        }
-
-        // Check if student already has a pending application
-        const [existing] = await db.execute(
-            'SELECT id FROM room_applications WHERE usn = ? AND status = "pending"',
+        const { usn } = req.body;
+        const [rows] = await db.execute(
+            'SELECT s.*, r.room_number FROM students s LEFT JOIN rooms r ON s.room_id = r.room_id WHERE s.usn = ?',
             [usn]
         );
-        if (existing.length > 0) {
-            return res.status(400).json({ success: false, message: 'You already have a pending room application' });
-        }
-
-        await db.execute(
-            'INSERT INTO room_applications (usn, room_type, status, created_at) VALUES (?, ?, "pending", CURRENT_TIMESTAMP)',
-            [usn, room_type]
-        );
-        res.json({ success: true, message: 'Application submitted successfully' });
-    } catch (error) {
-        console.error('Error submitting room application:', error);
-        if (error.code === 'ER_NO_REFERENCED_ROW_2') {
-            res.status(400).json({ success: false, message: 'Student not found. Please register first.' });
+        if (rows.length > 0) {
+            res.json({ success: true, student: rows[0] });
         } else {
-            res.status(500).json({ success: false, message: 'Database error. Please try again later.' });
+            res.json({ success: false, message: 'Student not found' });
         }
-    }
-});
-
-// Get room applications
-app.get('/api/admin/room-applications', async (req, res) => {
-    try {
-        const [rows] = await db.execute(
-            'SELECT ra.*, s.name as student_name FROM room_applications ra JOIN students s ON ra.usn = s.usn WHERE ra.status = "pending"'
-        );
-        res.json(rows);
     } catch (error) {
+        console.error('Error searching student:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -121,6 +131,12 @@ app.get('/api/admin/room-applications', async (req, res) => {
 app.put('/api/admin/update-status', async (req, res) => {
     try {
         const { type, id, status, room_number } = req.body;
+        
+        // Validate required parameters
+        if (!type || !id || !status) {
+            return res.status(400).json({ success: false, message: 'Missing required parameters' });
+        }
+        
         let table;
         switch(type) {
             case 'roomRequests': table = 'room_applications'; break;
@@ -129,10 +145,64 @@ app.put('/api/admin/update-status', async (req, res) => {
             default: throw new Error('Invalid request type');
         }
         
-        if (type === 'roomRequests' && status === 'approved') {
+        if (type === 'cleaningRequests' && status === 'completed') {
+            // Get the cleaning request details to update worker availability
+            const [cleaningRequest] = await db.execute(
+                'SELECT worker_id, preferred_time FROM cleaning_requests WHERE id = ?',
+                [id]
+            );
+            
+            if (cleaningRequest.length > 0 && cleaningRequest[0].worker_id) {
+                // Update worker's assigned_date and availability
+                await db.execute(
+                    'UPDATE workers SET assigned_date = ?, is_available = FALSE WHERE id = ?',
+                    [cleaningRequest[0].preferred_time, cleaningRequest[0].worker_id]
+                );
+            }
+            
+            // Update the cleaning request status
+            await db.execute(
+                `UPDATE ${table} SET status = ? WHERE id = ?`,
+                [status, id]
+            );
+        } else if (type === 'roomRequests' && status === 'approved') {
             if (!room_number) {
                 return res.status(400).json({ success: false, message: 'Room number is required for approval' });
             }
+            
+            // Get the room application details
+            const [application] = await db.execute(
+                'SELECT usn, room_type FROM room_applications WHERE id = ?',
+                [id]
+            );
+            
+            if (application.length === 0) {
+                return res.status(404).json({ success: false, message: 'Room application not found' });
+            }
+            
+            const { usn, room_type } = application[0];
+            
+            // Check if student already exists in the students table
+            const [existingStudent] = await db.execute('SELECT usn FROM students WHERE usn = ?', [usn]);
+            
+            // If student doesn't exist, add them to the students table
+            if (existingStudent.length === 0) {
+                // Get student details from the application form
+                const [studentDetails] = await db.execute(
+                    'SELECT student_name, dob FROM room_applications WHERE id = ?',
+                    [id]
+                );
+                
+                if (studentDetails.length > 0 && studentDetails[0].student_name && studentDetails[0].dob) {
+                    // Add student to students table
+                    await db.execute(
+                        'INSERT INTO students (usn, name, dob) VALUES (?, ?, ?)',
+                        [usn, studentDetails[0].student_name, studentDetails[0].dob]
+                    );
+                }
+            }
+            
+            // Update the room application status
             await db.execute(
                 `UPDATE ${table} SET status = ?, room_number = ? WHERE id = ?`,
                 [status, room_number, id]
@@ -145,6 +215,36 @@ app.put('/api/admin/update-status', async (req, res) => {
         }
         res.json({ success: true });
     } catch (error) {
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get all rooms with occupants
+app.get('/api/admin/rooms', async (req, res) => {
+    try {
+        const [rooms] = await db.execute(
+            `SELECT r.*, 
+            GROUP_CONCAT(
+                JSON_OBJECT(
+                    'usn', ro.student_usn, 
+                    'name', s.name
+                )
+            ) as occupants
+            FROM rooms r
+            LEFT JOIN room_occupants ro ON r.room_id = ro.room_id
+            LEFT JOIN students s ON ro.student_usn = s.usn
+            GROUP BY r.room_id`
+        );
+
+        // Parse the occupants JSON string for each room
+        const formattedRooms = rooms.map(room => ({
+            ...room,
+            occupants: room.occupants ? JSON.parse(`[${room.occupants}]`) : []
+        }));
+
+        res.json(formattedRooms);
+    } catch (error) {
+        console.error('Error fetching rooms:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });
@@ -204,6 +304,33 @@ app.get('/api/admin/cleaning-requests', async (req, res) => {
     }
 });
 
+// Get available workers for a specific date
+app.get('/api/available-workers', async (req, res) => {
+    try {
+        const { date } = req.query;
+        if (!date) {
+            return res.status(400).json({ success: false, message: 'Date is required' });
+        }
+
+        // Get workers who are available on the requested date
+        const [availableWorkers] = await db.execute(
+            'SELECT w.id, w.name FROM workers w JOIN worker_availability wa ON w.id = wa.worker_id WHERE wa.available_date = ? AND w.is_available = TRUE',
+            [date]
+        );
+
+        // If no specific availability records, check if any workers are generally available
+        if (availableWorkers.length === 0) {
+            const [generalWorkers] = await db.execute('SELECT id, name FROM workers WHERE is_available = TRUE LIMIT 10');
+            return res.json({ success: true, available: generalWorkers.length > 0, workers: generalWorkers });
+        }
+
+        res.json({ success: true, available: availableWorkers.length > 0, workers: availableWorkers });
+    } catch (error) {
+        console.error('Error checking worker availability:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
 // Submit cleaning request
 app.post('/api/cleaning-request', async (req, res) => {
     try {
@@ -218,10 +345,42 @@ app.post('/api/cleaning-request', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Student not found' });
         }
 
-        await db.execute(
-            'INSERT INTO cleaning_requests (usn, room_number, preferred_time, status) VALUES (?, ?, ?, "pending")',
-            [usn, roomNumber, date]
+        // Check if any worker is available on the requested date
+        const [availableWorkers] = await db.execute(
+            'SELECT w.id FROM workers w JOIN worker_availability wa ON w.id = wa.worker_id WHERE wa.available_date = ? AND w.is_available = TRUE LIMIT 1',
+            [date]
         );
+
+        // If no specific availability records, check if any workers are generally available
+        let workerId = null;
+        if (availableWorkers.length === 0) {
+            const [generalWorkers] = await db.execute('SELECT id FROM workers WHERE is_available = TRUE LIMIT 1');
+            if (generalWorkers.length === 0) {
+                return res.status(400).json({ success: false, message: 'No workers available on the requested date. Please select a different date.' });
+            }
+            workerId = generalWorkers[0].id;
+        } else {
+            workerId = availableWorkers[0].id;
+        }
+
+        try {
+            // Try with worker_id first (as per schema)
+            await db.execute(
+                'INSERT INTO cleaning_requests (usn, room_number, preferred_time, worker_id, status) VALUES (?, ?, ?, ?, "pending")',
+                [usn, roomNumber, date, workerId]
+            );
+        } catch (err) {
+            // If worker_id column doesn't exist, insert without it
+            if (err.code === 'ER_BAD_FIELD_ERROR' && err.sqlMessage.includes("worker_id")) {
+                await db.execute(
+                    'INSERT INTO cleaning_requests (usn, room_number, preferred_time, status) VALUES (?, ?, ?, "pending")',
+                    [usn, roomNumber, date]
+                );
+            } else {
+                // If it's a different error, rethrow it
+                throw err;
+            }
+        }
         
         res.json({ success: true, message: 'Cleaning request submitted' });
     } catch (error) {

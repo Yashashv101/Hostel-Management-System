@@ -4,75 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Student Portal - HMS</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #1a73e8;
-        }
-        .nav-link {
-            display: inline-block;
-            padding: 8px 16px;
-            color: #1a73e8;
-            text-decoration: none;
-            margin-bottom: 20px;
-        }
-        .form-section {
-            margin-bottom: 30px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input[type="text"],
-        input[type="number"],
-        textarea,
-        select {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        button {
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        button:hover {
-            opacity: 0.9;
-        }
-        .success-message {
-            color: #34a853;
-            margin-top: 10px;
-            display: none;
-        }
-        .logout-btn {
-            float: right;
-            background-color: #ea4335;
-        }
+        /* Page-specific styles can go here if needed */
     </style>
 </head>
 <body>
@@ -106,16 +41,17 @@
 
         <div class="form-section">
             <h2>Request Room Cleaning</h2>
-            <form id="cleaningForm" onsubmit="return submitCleaningRequest(event)">
+            <form id="cleaningForm" onsubmit="return submitCleaningRequest(event);">
                 <div class="form-group">
                     <label for="roomNumber">Room Number</label>
                     <input type="text" id="roomNumber" required>
                 </div>
                 <div class="form-group">
                     <label for="cleaningDate">Preferred Date</label>
-                    <input type="date" id="cleaningDate" required>
+                    <input type="date" id="cleaningDate" required onchange="checkWorkerAvailability()">
                 </div>
-                <button type="submit">Request Cleaning</button>
+                <div id="workerAvailabilityMessage" style="margin: 10px 0; display: none;"></div>
+                <button type="submit" id="cleaningSubmitBtn">Request Cleaning</button>
                 <div class="success-message" id="cleaningSuccess">Cleaning request submitted successfully!</div>
             </form>
         </div>
@@ -131,6 +67,11 @@
             }
             document.getElementById('studentInfo').innerHTML = `<p>Welcome, ${currentStudent.name} (${currentStudent.usn})</p>`;
         }
+        
+        // Page transition effect
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('fade-in');
+        });
 
         async function submitComplaint(event) {
             event.preventDefault();
@@ -155,11 +96,11 @@
                 if (result.success) {
                     // Show success message
                     const successMessage = document.getElementById('complaintSuccess');
-                    successMessage.style.display = 'block';
+                    successMessage.classList.add('show');
                     event.target.reset();
 
                     setTimeout(() => {
-                        successMessage.style.display = 'none';
+                        successMessage.classList.remove('show');
                     }, 3000);
                 } else {
                     alert('Error: ' + result.message);
@@ -172,14 +113,62 @@
             return false;
         }
 
+        async function checkWorkerAvailability() {
+            const dateInput = document.getElementById('cleaningDate');
+            const messageDiv = document.getElementById('workerAvailabilityMessage');
+            const submitBtn = document.getElementById('cleaningSubmitBtn');
+            
+            if (!dateInput.value) {
+                messageDiv.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/available-workers?date=${dateInput.value}`);
+                const result = await response.json();
+                
+                messageDiv.style.display = 'block';
+                
+                if (result.success && result.available) {
+                    messageDiv.style.display = 'block';
+                    messageDiv.className = '';
+                    messageDiv.classList.add('available');
+                    messageDiv.innerHTML = `<i class="fa fa-check-circle"></i> Workers are available on this date (${result.workers.length} available)`;
+                    submitBtn.disabled = false;
+                } else {
+                    messageDiv.style.display = 'block';
+                    messageDiv.className = '';
+                    messageDiv.classList.add('unavailable');
+                    messageDiv.innerHTML = `<i class="fa fa-times-circle"></i> No workers available on this date. Please select a different date.`;
+                    submitBtn.disabled = true;
+                }
+            } catch (error) {
+                console.error('Error checking worker availability:', error);
+                messageDiv.style.color = 'red';
+                messageDiv.innerHTML = 'Error checking worker availability. Please try again.';
+            }
+        }
+        
         async function submitCleaningRequest(event) {
             event.preventDefault();
+            console.log('Cleaning request submission triggered');
+            
+            // Get form elements
+            const roomNumberInput = document.getElementById('roomNumber');
+            const dateInput = document.getElementById('cleaningDate');
+            const submitBtn = document.getElementById('cleaningSubmitBtn');
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
             const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
             const request = {
-                roomNumber: document.getElementById('roomNumber').value,
-                date: document.getElementById('cleaningDate').value,
+                roomNumber: roomNumberInput.value,
+                date: dateInput.value,
                 usn: currentStudent.usn
             };
+            console.log('Request data:', request);
 
             try {
                 const response = await fetch('/api/cleaning-request', {
@@ -192,13 +181,18 @@
 
                 const result = await response.json();
                 
+                // Re-enable the submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Request Cleaning';
+                
                 if (result.success) {
                     const successMessage = document.getElementById('cleaningSuccess');
-                    successMessage.style.display = 'block';
+                    successMessage.classList.add('show');
                     event.target.reset();
+                    document.getElementById('workerAvailabilityMessage').style.display = 'none';
 
                     setTimeout(() => {
-                        successMessage.style.display = 'none';
+                        successMessage.classList.remove('show');
                     }, 3000);
                 } else {
                     alert('Error: ' + result.message);

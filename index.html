@@ -4,54 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Hostel Management System</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
         h1, h2 {
             text-align: center;
-            color: #1a73e8;
         }
-        .login-sections {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 30px;
-            flex-wrap: wrap;
-            gap: 20px;
-        }
-        .login-section {
-            flex: 1;
-            min-width: 300px;
-            padding: 20px;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: bold;
-        }
-        input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
+        /* Page-specific styles can go here if needed */
         button {
             width: 100%;
             padding: 10px;
@@ -65,20 +23,7 @@
         button:hover {
             opacity: 0.9;
         }
-        .view-rooms {
-            text-align: center;
-            margin-top: 30px;
-            padding-top: 20px;
-            border-top: 1px solid #ddd;
-        }
-        .view-rooms a {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #34a853;
-            color: white;
-            text-decoration: none;
-            border-radius: 4px;
-        }
+
         .error-message {
             color: #ea4335;
             margin-top: 5px;
@@ -124,14 +69,29 @@
             </div>
         </div>
 
-        <div class="view-rooms">
-            <h2>Looking for a Room?</h2>
-            <p>You can view available rooms and apply without logging in</p>
-            <a href="rooms.html">View Rooms</a>
-        </div>
+
     </div>
 
     <script>
+        // Check if there's a logged-in user
+        function checkLoggedInUser() {
+            const currentStudent = localStorage.getItem('currentStudent');
+            const currentAdmin = localStorage.getItem('currentAdmin');
+            
+            if (currentStudent) {
+                window.location.href = 'student.html';
+            } else if (currentAdmin) {
+                window.location.href = 'admin.html';
+            }
+        }
+        
+        // Page transition effect
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('fade-in');
+            
+            // No animation on login sections - removed to fix continuous zooming issue
+        });
+        
         async function handleStudentLogin(event) {
             event.preventDefault();
             const usn = document.getElementById('usn').value;
@@ -155,9 +115,15 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    // Store login status
-                    localStorage.setItem('currentStudent', JSON.stringify(data.student));
-                    window.location.href = 'student.html';
+                    // Add transition effect before redirect
+                    document.querySelector('.container').style.opacity = '0';
+                    document.querySelector('.container').style.transform = 'translateY(-20px)';
+                    
+                    setTimeout(() => {
+                        // Store login status
+                        localStorage.setItem('currentStudent', JSON.stringify(data.student));
+                        window.location.href = 'student.html';
+                    }, 500);
                 } else {
                     showError(errorElement, data.message || 'Invalid USN or Date of Birth');
                 }
@@ -184,8 +150,16 @@
 
                 const data = await response.json();
                 if (data.success) {
-                    localStorage.setItem('adminLoggedIn', 'true');
-                    window.location.href = 'admin.html';
+                    // Add transition effect before redirect
+                    document.querySelector('.container').style.opacity = '0';
+                    document.querySelector('.container').style.transform = 'translateY(-20px)';
+                    
+                    setTimeout(() => {
+                        localStorage.setItem('currentAdmin', JSON.stringify({
+                            username: username
+                        }));
+                        window.location.href = 'admin.html';
+                    }, 500);
                 } else {
                     showError(errorElement, data.message || 'Invalid username or password');
                 }

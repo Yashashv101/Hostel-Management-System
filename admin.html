@@ -4,88 +4,56 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Portal - HMS</title>
+    <link rel="stylesheet" href="styles.css">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 20px;
-            background-color: #f0f2f5;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            color: #333;
-        }
-        .form-group input {
-            width: 100%;
-            padding: 8px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            box-sizing: border-box;
-        }
-        .container {
-            max-width: 1000px;
-            margin: 0 auto;
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #34a853;
-        }
-        .nav-link {
-            display: inline-block;
-            padding: 8px 16px;
-            color: #34a853;
-            text-decoration: none;
-            margin-bottom: 20px;
-        }
+        /* Page-specific styles can go here if needed */
         .request-section {
             margin-bottom: 30px;
         }
-        .request-list {
-            border: 1px solid #ddd;
-            border-radius: 4px;
-            margin-top: 10px;
-        }
+        /* Admin-specific styles are now in the main CSS file */
         .request-item {
-            padding: 15px;
-            border-bottom: 1px solid #ddd;
-        }
-        .request-item:last-child {
-            border-bottom: none;
-        }
-        .request-details {
-            margin-bottom: 10px;
-        }
-        .action-buttons {
-            display: flex;
-            gap: 10px;
-        }
-        .approve-btn {
-            background-color: #34a853;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-        .reject-btn {
-            background-color: #ea4335;
-            color: white;
-            padding: 8px 16px;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
         }
         .no-requests {
             text-align: center;
             padding: 20px;
             color: #666;
+        }
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        .room-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .room-card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        .room-status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        .status-available {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .status-full {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        .occupants-list {
+            margin-top: 10px;
+            font-size: 0.9em;
         }
     </style>
 </head>
@@ -110,6 +78,24 @@
                     <label for="studentDOB">Date of Birth:</label>
                     <input type="date" id="studentDOB" required>
                 </div>
+                <div class="form-group">
+                    <label for="studentBranch">Branch:</label>
+                    <input type="text" id="studentBranch" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentPhone">Phone Number:</label>
+                    <input type="tel" id="studentPhone" pattern="[0-9]{10}" required>
+                </div>
+                <div class="form-group">
+                    <label for="parentPhone">Parent's Phone Number:</label>
+                    <input type="tel" id="parentPhone" pattern="[0-9]{10}" required>
+                </div>
+                <div class="form-group">
+                    <label for="roomSelect">Select Room:</label>
+                    <select id="roomSelect" required>
+                        <option value="">Select a room</option>
+                    </select>
+                </div>
                 <button type="submit" class="approve-btn">Add Student</button>
             </form>
             <div id="studentAddedMessage" style="display: none; color: green; margin-top: 10px;">
@@ -117,12 +103,7 @@
             </div>
         </div>
 
-        <div class="request-section">
-            <h2>Room Applications</h2>
-            <div id="roomRequests" class="request-list">
-                <!-- Room requests will be loaded here -->
-            </div>
-        </div>
+
 
         <div class="request-section">
             <h2>Complaints</h2>
@@ -137,18 +118,93 @@
                 <!-- Cleaning requests will be loaded here -->
             </div>
         </div>
+
+        <div class="request-section">
+            <h2>Search Student</h2>
+            <div class="search-section">
+                <form id="searchStudentForm" onsubmit="searchStudent(event)">
+                    <div class="form-group">
+                        <label for="searchUSN">Enter USN:</label>
+                        <input type="text" id="searchUSN" required>
+                    </div>
+                    <button type="submit" class="search-btn">Search</button>
+                </form>
+                <div id="searchResult" style="display: none; margin-top: 20px;">
+                    <!-- Search results will be displayed here -->
+                </div>
+            </div>
+        </div>
+
+        <div class="request-section">
+            <h2>Room Management</h2>
+            <div id="roomManagement" class="room-grid">
+                <!-- Room status will be loaded here -->
+            </div>
+        </div>
     </div>
 
     <script>
         // Check authentication
-        function checkAuth() {
-            if (!localStorage.getItem('adminLoggedIn')) {
-                window.location.href = 'index.html';
+        async function searchStudent(event) {
+            event.preventDefault();
+            const usn = document.getElementById('searchUSN').value;
+            try {
+                const response = await fetch('/api/admin/search-student', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ usn })
+                });
+                const data = await response.json();
+                const resultDiv = document.getElementById('searchResult');
+                
+                if (data.success) {
+                    const student = data.student;
+                    resultDiv.innerHTML = `
+                        <div class="student-details">
+                            <h3>Student Details</h3>
+                            <p><strong>Name:</strong> ${student.name}</p>
+                            <p><strong>USN:</strong> ${student.usn}</p>
+                            <p><strong>Date of Birth:</strong> ${new Date(student.dob).toLocaleDateString()}</p>
+                            <p><strong>Branch:</strong> ${student.branch}</p>
+                            <p><strong>Phone Number:</strong> ${student.phone_number}</p>
+                            <p><strong>Parent's Phone:</strong> ${student.parent_phone}</p>
+                            <p><strong>Room Number:</strong> ${student.room_number || 'Not assigned'}</p>
+                        </div>
+                    `;
+                } else {
+                    resultDiv.innerHTML = '<p class="error-message">Student not found</p>';
+                }
+                resultDiv.style.display = 'block';
+            } catch (error) {
+                console.error('Error searching student:', error);
+                document.getElementById('searchResult').innerHTML = '<p class="error-message">Error searching student. Please try again.</p>';
             }
         }
 
+        function checkAuth() {
+            if (!localStorage.getItem('currentAdmin')) {
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Page transition effect
+        document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('fade-in');
+            
+            // Add animation classes to request items
+            const requestItems = document.querySelectorAll('.request-item');
+            requestItems.forEach((item, index) => {
+                setTimeout(() => {
+                    item.style.opacity = '1';
+                    item.style.transform = 'translateY(0)';
+                }, 100 * index);
+            });
+        });
+
         function logout() {
-            localStorage.removeItem('adminLoggedIn');
+            localStorage.removeItem('currentAdmin');
             window.location.href = 'index.html';
         }
 
@@ -158,9 +214,7 @@
             try {
                 let endpoint = '';
                 switch(type) {
-                    case 'roomRequests':
-                        endpoint = '/api/admin/room-applications';
-                        break;
+
                     case 'complaints':
                         endpoint = '/api/admin/complaints';
                         break;
@@ -170,7 +224,14 @@
                 }
 
                 const response = await fetch(endpoint);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const requests = await response.json();
+                // Only log if there are actual results to reduce console spam
+                if (requests.length > 0) {
+                    console.log(`${type} data:`, requests);
+                }
 
                 if (requests.length === 0) {
                     container.innerHTML = '<div class="no-requests">No pending requests</div>';
@@ -180,16 +241,11 @@
                 container.innerHTML = requests.map(request => {
                     let details = '';
                     switch(type) {
-                        case 'roomRequests':
-                            details = `
-                                <strong>Student Name:</strong> ${request.student_name}<br>
-                                <strong>Student ID:</strong> ${request.usn}<br>
-                                <strong>Room Type:</strong> ${request.room_type}`;
-                            break;
+
                         case 'complaints':
                             details = `
                                 <strong>Student Name:</strong> ${request.student_name}<br>
-                                <strong>Description:</strong> ${request.description}`;
+                                <strong>Description:</strong> ${request.complaint_text}`;
                             break;
                         case 'cleaningRequests':
                             details = `
@@ -202,11 +258,25 @@
                         <div class="request-item">
                             <div class="request-details">${details}</div>
                             <div class="action-buttons">
-                                <button class="approve-btn" onclick="updateStatus('${type}', ${request.id}, '${type === 'complaints' ? 'resolved' : (type === 'cleaningRequests' ? 'completed' : 'approved')}')">Approve</button>
+                                <button class="approve-btn" onclick="updateStatus('${type}', ${request.id}, '${type === 'complaints' ? 'resolved' : (type === 'cleaningRequests' ? 'completed' : 'approved')}')">${type === 'complaints' ? 'Resolve' : (type === 'cleaningRequests' ? 'Complete' : 'Approve')}</button>
                                 <button class="reject-btn" onclick="updateStatus('${type}', ${request.id}, 'rejected')">Reject</button>
                             </div>
                         </div>`;
                 }).join('');
+                
+                // Apply animation to newly created request items
+                const requestItems = container.querySelectorAll('.request-item');
+                requestItems.forEach((item, index) => {
+                    // Set initial styles to ensure visibility
+                    item.style.opacity = '0';
+                    item.style.transform = 'translateY(20px)';
+                    
+                    // Apply animation with a slight delay for each item
+                    setTimeout(() => {
+                        item.style.opacity = '1';
+                        item.style.transform = 'translateY(0)';
+                    }, 100 * index);
+                });
             } catch (error) {
                 container.innerHTML = '<div class="no-requests">Error loading requests</div>';
                 console.error('Error loading requests:', error);
@@ -214,11 +284,38 @@
         }
 
         // Function to add new student
+        // Load available rooms for student registration
+        async function loadAvailableRooms() {
+            try {
+                const response = await fetch('/api/admin/rooms');
+                const rooms = await response.json();
+                const roomSelect = document.getElementById('roomSelect');
+                roomSelect.innerHTML = '<option value="">Select a room</option>';
+                
+                rooms.forEach(room => {
+                    if (room.current_occupancy < room.capacity) {
+                        roomSelect.innerHTML += `
+                            <option value="${room.room_id}">
+                                Room ${room.room_number} (${room.current_occupancy}/${room.capacity} occupied)
+                            </option>
+                        `;
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading rooms:', error);
+                alert('Error loading available rooms');
+            }
+        }
+
         async function addStudent(event) {
             event.preventDefault();
             const name = document.getElementById('studentName').value;
             const usn = document.getElementById('studentUSN').value;
             const dob = document.getElementById('studentDOB').value;
+            const branch = document.getElementById('studentBranch').value;
+            const phone_number = document.getElementById('studentPhone').value;
+            const parent_phone = document.getElementById('parentPhone').value;
+            const room_id = document.getElementById('roomSelect').value;
 
             try {
                 const response = await fetch('/api/admin/add-student', {
@@ -226,41 +323,55 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ name, usn, dob })
+                    body: JSON.stringify({
+                        name,
+                        usn,
+                        dob,
+                        branch,
+                        phone_number,
+                        parent_phone,
+                        room_id
+                    })
                 });
 
                 const data = await response.json();
+
                 if (data.success) {
                     document.getElementById('studentAddedMessage').style.display = 'block';
                     document.getElementById('addStudentForm').reset();
+                    loadAvailableRooms(); // Refresh room list
+                    loadRooms(); // Refresh room management display
                     setTimeout(() => {
                         document.getElementById('studentAddedMessage').style.display = 'none';
                     }, 3000);
                 } else {
-                    alert('Failed to add student: ' + data.message);
+                    alert(data.message || 'Error adding student');
                 }
             } catch (error) {
-                console.error('Error adding student:', error);
-                alert('Server error. Please try again later.');
+                console.error('Error:', error);
+                alert('Error adding student');
             }
         }
 
         // Function to update request status
-        // In your admin.html file, look for the function that handles status updates
-        // It might look something like this:
-        
         async function updateStatus(type, id, status) {
             try {
+                // Disable the buttons to prevent multiple clicks
+                const buttons = document.querySelectorAll(`button[onclick*="updateStatus('${type}', ${id}"]`);
+                buttons.forEach(btn => {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.5';
+                });
+                
                 let requestData = { type, id, status };
                 
-                // For room requests that are being approved, we need to prompt for room number
-                if (type === 'roomRequests' && status === 'approved') {
-                    const roomNumber = prompt('Please enter the room number:');
-                    if (!roomNumber) {
-                        alert('Room number is required for approval');
-                        return;
-                    }
-                    requestData.room_number = roomNumber;
+
+                
+                // Show loading indicator and disable the entire request item
+                const requestItem = buttons[0].closest('.request-item');
+                if (requestItem) {
+                    requestItem.style.opacity = '0.7';
+                    requestItem.style.pointerEvents = 'none'; // Prevent any clicks during processing
                 }
 
                 const response = await fetch('/api/admin/update-status', {
@@ -273,15 +384,49 @@
         
                 const data = await response.json();
                 if (data.success) {
+                    // Remove the request item from the UI immediately
+                    const requestItem = buttons[0].closest('.request-item');
+                    if (requestItem) {
+                        requestItem.style.opacity = '0';
+                        requestItem.style.transform = 'translateY(20px)';
+                        setTimeout(() => {
+                            requestItem.remove();
+                            
+                            // Check if there are no more items and show the "No pending requests" message
+                            const container = document.getElementById(type);
+                            if (container.querySelectorAll('.request-item').length === 0) {
+                                container.innerHTML = '<div class="no-requests">No pending requests</div>';
+                            }
+                        }, 300);
+                    }
+                    
                     alert('Status updated successfully');
-                    // Refresh all requests to ensure UI is up to date
-                    loadAllRequests();
+                    
+                    // No need to refresh immediately as we've already removed the item from UI
                 } else {
+                    // Re-enable buttons on error
+                    buttons.forEach(btn => {
+                        btn.disabled = false;
+                        btn.style.opacity = '1';
+                    });
                     alert('Failed to update status: ' + data.message);
                 }
             } catch (error) {
                 console.error('Error updating status:', error);
                 alert('Error updating status. Please try again.');
+                
+                // Re-enable buttons and restore UI state on error
+                buttons.forEach(btn => {
+                    btn.disabled = false;
+                    btn.style.opacity = '1';
+                });
+                
+                // Restore request item if it exists
+                const requestItem = buttons[0]?.closest('.request-item');
+                if (requestItem) {
+                    requestItem.style.opacity = '1';
+                    requestItem.style.pointerEvents = 'auto';
+                }
             }
         }
 
@@ -291,13 +436,65 @@
             loadRequests('complaints', 'complaints');
             loadRequests('cleaningRequests', 'cleaningRequests');
         }
+        
+        // Track if we're currently loading data to prevent multiple simultaneous requests
+        let isLoading = false;
+        
+        // Function to refresh data with debounce
+        function refreshData() {
+            if (isLoading) return;
+            
+            isLoading = true;
+            loadAllRequests();
+            
+            // Reset loading flag after all requests should be complete
+            setTimeout(() => {
+                isLoading = false;
+            }, 2000);
+        }
 
         // Initial load
         checkAuth();
-        loadAllRequests();
+        loadAvailableRooms(); // Load rooms for dropdown
+        loadRequests('complaints', 'complaints');
+        loadRequests('cleaningRequests', 'cleaningRequests');
 
-        // Refresh data every 30 seconds
-        setInterval(loadAllRequests, 30000);
+        // Function to load and display room status
+        async function loadRooms() {
+            const container = document.getElementById('roomManagement');
+            try {
+                const response = await fetch('/api/admin/rooms');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const rooms = await response.json();
+
+                container.innerHTML = rooms.map(room => {
+                    const occupantsHtml = room.occupants ? room.occupants
+                        .map(student => `<div>${student.name} (${student.usn})</div>`)
+                        .join('') : '';
+
+                    return `
+                        <div class="room-card">
+                            <h3>Room ${room.room_number}</h3>
+                            <div class="room-status ${room.status === 'available' ? 'status-available' : 'status-full'}">
+                                ${room.status.charAt(0).toUpperCase() + room.status.slice(1)}
+                            </div>
+                            <div>Occupancy: ${room.current_occupancy}/${room.capacity}</div>
+                            <div class="occupants-list">
+                                ${occupantsHtml}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (error) {
+                console.error('Error loading rooms:', error);
+                container.innerHTML = '<div class="no-requests">Error loading room status</div>';
+            }
+        }
+
+        // Refresh data every 60 seconds (increased from 30 to reduce server load)
+        setInterval(refreshData, 60000);
     </script>
 </body>
 </html>
