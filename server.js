@@ -312,17 +312,11 @@ app.get('/api/available-workers', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Date is required' });
         }
 
-        // Get workers who are available on the requested date
+        // Check for available workers based on is_available flag
         const [availableWorkers] = await db.execute(
-            'SELECT w.id, w.name FROM workers w JOIN worker_availability wa ON w.id = wa.worker_id WHERE wa.available_date = ? AND w.is_available = TRUE',
+            'SELECT id, name FROM workers WHERE is_available = TRUE AND (assigned_date IS NULL OR assigned_date != ?)',
             [date]
         );
-
-        // If no specific availability records, check if any workers are generally available
-        if (availableWorkers.length === 0) {
-            const [generalWorkers] = await db.execute('SELECT id, name FROM workers WHERE is_available = TRUE LIMIT 10');
-            return res.json({ success: true, available: generalWorkers.length > 0, workers: generalWorkers });
-        }
 
         res.json({ success: true, available: availableWorkers.length > 0, workers: availableWorkers });
     } catch (error) {
@@ -347,18 +341,14 @@ app.post('/api/cleaning-request', async (req, res) => {
 
         // Check if any worker is available on the requested date
         const [availableWorkers] = await db.execute(
-            'SELECT w.id FROM workers w JOIN worker_availability wa ON w.id = wa.worker_id WHERE wa.available_date = ? AND w.is_available = TRUE LIMIT 1',
+            'SELECT id FROM workers WHERE is_available = TRUE AND (assigned_date IS NULL OR assigned_date != ?) LIMIT 1',
             [date]
         );
 
-        // If no specific availability records, check if any workers are generally available
+        // Check if workers are available
         let workerId = null;
         if (availableWorkers.length === 0) {
-            const [generalWorkers] = await db.execute('SELECT id FROM workers WHERE is_available = TRUE LIMIT 1');
-            if (generalWorkers.length === 0) {
-                return res.status(400).json({ success: false, message: 'No workers available on the requested date. Please select a different date.' });
-            }
-            workerId = generalWorkers[0].id;
+            return res.status(400).json({ success: false, message: 'No workers available on the requested date. Please select a different date.' });
         } else {
             workerId = availableWorkers[0].id;
         }

@@ -34,14 +34,7 @@ CREATE TABLE IF NOT EXISTS workers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- Create worker_availability table to track available dates
-CREATE TABLE IF NOT EXISTS worker_availability (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    worker_id INT NOT NULL,
-    available_date DATE NOT NULL,
-    FOREIGN KEY (worker_id) REFERENCES workers(id),
-    UNIQUE KEY (worker_id, available_date)
-);
+
 
 -- Create cleaning_requests table
 CREATE TABLE IF NOT EXISTS cleaning_requests (
