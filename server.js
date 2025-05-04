@@ -304,6 +304,66 @@ app.get('/api/admin/cleaning-requests', async (req, res) => {
     }
 });
 
+// Delete student (Admin only)
+app.delete('/api/admin/delete-student', async (req, res) => {
+    try {
+        const { usn } = req.body;
+        
+        if (!usn) {
+            return res.status(400).json({ success: false, message: 'USN is required' });
+        }
+        
+        // Check if student exists
+        const [student] = await db.execute('SELECT room_id FROM students WHERE usn = ?', [usn]);
+        
+        if (student.length === 0) {
+            return res.status(404).json({ success: false, message: 'Student not found' });
+        }
+        
+        const roomId = student[0].room_id;
+        
+        // Get a connection from the pool for transaction
+        const connection = await db.getConnection();
+        
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+            
+            // First delete any associated cleaning requests to handle foreign key constraints
+            await connection.execute('DELETE FROM cleaning_requests WHERE usn = ?', [usn]);
+            
+            // Then delete any complaints
+            await connection.execute('DELETE FROM complaints WHERE usn = ?', [usn]);
+            
+            // Remove student from room_occupants
+            await connection.execute('DELETE FROM room_occupants WHERE student_usn = ?', [usn]);
+            
+            // Delete student from students table
+            await connection.execute('DELETE FROM students WHERE usn = ?', [usn]);
+            
+            // Update room occupancy if student was assigned to a room
+            if (roomId) {
+                await connection.execute(
+                    'UPDATE rooms SET current_occupancy = (SELECT COUNT(*) FROM room_occupants WHERE room_id = ?), status = CASE WHEN (SELECT COUNT(*) FROM room_occupants WHERE room_id = ?) >= 3 THEN "full" ELSE "available" END WHERE room_id = ?',
+                    [roomId, roomId, roomId]
+                );
+            }
+            
+            await connection.commit();
+            res.json({ success: true, message: 'Student deleted successfully' });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            // Release the connection back to the pool
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error deleting student:', error);
+        res.status(500).json({ success: false, message: 'Database error. Please try again later.' });
+    }
+});
+
 // Get available workers for a specific date
 app.get('/api/available-workers', async (req, res) => {
     try {
