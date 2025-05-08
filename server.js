@@ -130,7 +130,7 @@ app.post('/api/admin/search-student', async (req, res) => {
 // Update request status
 app.put('/api/admin/update-status', async (req, res) => {
     try {
-        const { type, id, status, room_number } = req.body;
+        const { type, id, status, room_number, worker_id } = req.body;
         
         // Validate required parameters
         if (!type || !id || !status) {
@@ -145,26 +145,101 @@ app.put('/api/admin/update-status', async (req, res) => {
             default: throw new Error('Invalid request type');
         }
         
-        if (type === 'cleaningRequests' && status === 'completed') {
-            // Get the cleaning request details to update worker availability
-            const [cleaningRequest] = await db.execute(
-                'SELECT worker_id, preferred_time FROM cleaning_requests WHERE id = ?',
-                [id]
-            );
-            
-            if (cleaningRequest.length > 0 && cleaningRequest[0].worker_id) {
-                // Update worker's assigned_date and availability
-                await db.execute(
-                    'UPDATE workers SET assigned_date = ?, is_available = FALSE WHERE id = ?',
-                    [cleaningRequest[0].preferred_time, cleaningRequest[0].worker_id]
+        if (type === 'cleaningRequests') {
+            // For rejected cleaning requests, simply update the status without worker assignment
+            if (status === 'rejected') {
+                // Get the cleaning request to check if a worker was assigned
+                const [cleaningRequest] = await db.execute(
+                    'SELECT worker_id FROM cleaning_requests WHERE id = ?',
+                    [id]
                 );
+                
+                // If a worker was assigned, update their availability
+                if (cleaningRequest.length > 0 && cleaningRequest[0].worker_id) {
+                    await db.execute(
+                        'UPDATE workers SET assigned_date = NULL, is_available = TRUE WHERE id = ?',
+                        [cleaningRequest[0].worker_id]
+                    );
+                }
+                
+                // Update the cleaning request status
+                await db.execute(
+                    `UPDATE ${table} SET status = ?, worker_id = NULL WHERE id = ?`,
+                    [status, id]
+                );
+                
+                return res.json({ success: true, message: 'Cleaning request rejected successfully' });
             }
             
-            // Update the cleaning request status
-            await db.execute(
-                `UPDATE ${table} SET status = ? WHERE id = ?`,
-                [status, id]
-            );
+            // For completed (approved) cleaning requests, assign a worker
+            if (status === 'completed') {
+                // Validate worker_id is provided for cleaning requests
+                if (!worker_id) {
+                    return res.status(400).json({ success: false, message: 'Worker ID is required for cleaning requests' });
+                }
+                
+                // Get the cleaning request details
+                const [cleaningRequest] = await db.execute(
+                    'SELECT preferred_time, room_number FROM cleaning_requests WHERE id = ?',
+                    [id]
+                );
+                
+                if (cleaningRequest.length === 0) {
+                    return res.status(404).json({ success: false, message: 'Cleaning request not found' });
+                }
+                
+                // Format the assignment date and time for display
+                const assignmentDate = new Date(cleaningRequest[0].preferred_time);
+                const formattedDate = assignmentDate.toLocaleDateString();
+                const formattedTime = assignmentDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                
+                // Get a connection from the pool for transaction
+                const connection = await db.getConnection();
+                
+                try {
+                    // Start transaction
+                    await connection.beginTransaction();
+                    
+                    // Create a new worker assignment record
+                    const [assignmentResult] = await connection.execute(
+                        'INSERT INTO worker_assignments (worker_id, cleaning_request_id, room_number, assignment_date, time_slot, status) VALUES (?, ?, ?, DATE(?), TIME(?), "pending")',
+                        [worker_id, id, cleaningRequest[0].room_number, assignmentDate, assignmentDate]
+                    );
+                    
+                    const assignmentId = assignmentResult.insertId;
+                    
+                    // Update the cleaning request with the assigned worker and assignment ID
+                    await connection.execute(
+                        `UPDATE ${table} SET status = ?, worker_id = ?, assignment_id = ? WHERE id = ?`,
+                        [status, worker_id, assignmentId, id]
+                    );
+                    
+                    // Update worker's availability
+                    await connection.execute(
+                        'UPDATE workers SET is_available = FALSE WHERE id = ?',
+                        [worker_id]
+                    );
+                    
+                    await connection.commit();
+                    
+                    // Return additional information about the assignment
+                    return res.json({ 
+                        success: true, 
+                        message: 'Cleaning request completed and worker assigned',
+                        assignment: {
+                            room_number: cleaningRequest[0].room_number,
+                            date: formattedDate,
+                            time: formattedTime
+                        }
+                    });
+                } catch (error) {
+                    await connection.rollback();
+                    throw error;
+                } finally {
+                    // Release the connection back to the pool
+                    connection.release();
+                }
+            }
         } else if (type === 'roomRequests' && status === 'approved') {
             if (!room_number) {
                 return res.status(400).json({ success: false, message: 'Room number is required for approval' });
@@ -296,7 +371,7 @@ app.get('/api/admin/complaints', async (req, res) => {
 app.get('/api/admin/cleaning-requests', async (req, res) => {
     try {
         const [rows] = await db.execute(
-            'SELECT cr.*, s.name as student_name FROM cleaning_requests cr JOIN students s ON cr.usn = s.usn WHERE cr.status = "pending"'
+            'SELECT cr.*, s.name as student_name, DATE(cr.preferred_time) as request_date, TIME_FORMAT(TIME(cr.preferred_time), "%h:%i %p") as request_time FROM cleaning_requests cr JOIN students s ON cr.usn = s.usn WHERE cr.status = "pending"'
         );
         res.json(rows);
     } catch (error) {
@@ -364,19 +439,61 @@ app.delete('/api/admin/delete-student', async (req, res) => {
     }
 });
 
-// Get available workers for a specific date
+// Get available workers for a specific date and time slot
 app.get('/api/available-workers', async (req, res) => {
+    try {
+        const { date, timeSlot } = req.query;
+        if (!date) {
+            return res.status(400).json({ success: false, message: 'Date is required' });
+        }
+
+        // Check for available workers based on is_available flag and worker_assignments table
+        // If timeSlot is provided, also check for workers not assigned to that specific time slot
+        let query = `
+            SELECT w.id, w.name FROM workers w 
+            WHERE w.is_available = TRUE AND NOT EXISTS (
+                SELECT 1 FROM worker_assignments wa 
+                WHERE wa.worker_id = w.id 
+                AND wa.assignment_date = ? 
+                AND wa.status = 'pending'`;
+        
+        let params = [date];
+        
+        if (timeSlot) {
+            // For a specific time slot, exclude workers assigned to this exact time
+            query += ` AND wa.time_slot = ?`;
+            params.push(timeSlot);
+        }
+        
+        query += `)`;
+        
+        const [availableWorkers] = await db.execute(query, params);
+
+        res.json({ success: true, available: availableWorkers.length > 0, workers: availableWorkers });
+    } catch (error) {
+        console.error('Error checking worker availability:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Legacy function for backward compatibility - uses the new worker_assignments table
+// instead of the removed assigned_date column
+app.get('/api/available-workers-legacy', async (req, res) => {
     try {
         const { date } = req.query;
         if (!date) {
             return res.status(400).json({ success: false, message: 'Date is required' });
         }
 
-        // Check for available workers based on is_available flag
-        const [availableWorkers] = await db.execute(
-            'SELECT id, name FROM workers WHERE is_available = TRUE AND (assigned_date IS NULL OR assigned_date != ?)',
-            [date]
-        );
+        // Use the new worker_assignments table instead of the removed assigned_date column
+        const query = `
+            SELECT id, name FROM workers WHERE is_available = TRUE AND NOT EXISTS (
+                SELECT 1 FROM worker_assignments 
+                WHERE worker_id = workers.id 
+                AND assignment_date = ?
+            )`;
+        
+        const [availableWorkers] = await db.execute(query, [date]);
 
         res.json({ success: true, available: availableWorkers.length > 0, workers: availableWorkers });
     } catch (error) {
@@ -388,9 +505,9 @@ app.get('/api/available-workers', async (req, res) => {
 // Submit cleaning request
 app.post('/api/cleaning-request', async (req, res) => {
     try {
-        const { usn, roomNumber, date } = req.body;
+        const { usn, roomNumber, date, timeSlot } = req.body;
 
-        if (!usn || !roomNumber || !date) {
+        if (!usn || !roomNumber || !date || !timeSlot) {
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
 
@@ -399,43 +516,300 @@ app.post('/api/cleaning-request', async (req, res) => {
             return res.status(400).json({ success: false, message: 'Student not found' });
         }
 
-        // Check if any worker is available on the requested date
-        const [availableWorkers] = await db.execute(
-            'SELECT id FROM workers WHERE is_available = TRUE AND (assigned_date IS NULL OR assigned_date != ?) LIMIT 1',
-            [date]
+        // Combine date and time slot into a datetime string
+        const preferredDateTime = `${date} ${timeSlot}`;
+
+        // Simply insert the cleaning request without assigning a worker
+        // Worker will be assigned only when admin approves the request
+        await db.execute(
+            'INSERT INTO cleaning_requests (usn, room_number, preferred_time, status) VALUES (?, ?, ?, "pending")',
+            [usn, roomNumber, preferredDateTime]
         );
-
-        // Check if workers are available
-        let workerId = null;
-        if (availableWorkers.length === 0) {
-            return res.status(400).json({ success: false, message: 'No workers available on the requested date. Please select a different date.' });
-        } else {
-            workerId = availableWorkers[0].id;
-        }
-
-        try {
-            // Try with worker_id first (as per schema)
-            await db.execute(
-                'INSERT INTO cleaning_requests (usn, room_number, preferred_time, worker_id, status) VALUES (?, ?, ?, ?, "pending")',
-                [usn, roomNumber, date, workerId]
-            );
-        } catch (err) {
-            // If worker_id column doesn't exist, insert without it
-            if (err.code === 'ER_BAD_FIELD_ERROR' && err.sqlMessage.includes("worker_id")) {
-                await db.execute(
-                    'INSERT INTO cleaning_requests (usn, room_number, preferred_time, status) VALUES (?, ?, ?, "pending")',
-                    [usn, roomNumber, date]
-                );
-            } else {
-                // If it's a different error, rethrow it
-                throw err;
-            }
-        }
         
         res.json({ success: true, message: 'Cleaning request submitted' });
     } catch (error) {
         console.error('Error submitting cleaning request:', error);
         res.status(500).json({ success: false, message: 'Database error' });
+    }
+});
+
+// Submit lost item request
+app.post('/api/lost-item', async (req, res) => {
+    try {
+        const { usn, item_name, description, location } = req.body;
+
+        // Validate input
+        if (!usn || !item_name) {
+            return res.status(400).json({ success: false, message: 'USN and item name are required' });
+        }
+
+        // Check if student exists
+        const [student] = await db.execute('SELECT usn, name, room_id FROM students WHERE usn = ?', [usn]);
+        if (student.length === 0) {
+            return res.status(400).json({ success: false, message: 'Student not found. Please register first.' });
+        }
+
+        await db.execute(
+            'INSERT INTO lost_items (usn, item_name, description, location, status) VALUES (?, ?, ?, ?, "pending")',
+            [usn, item_name, description || '', location || '']
+        );
+        res.json({ success: true, message: 'Lost item request submitted successfully' });
+    } catch (error) {
+        console.error('Error submitting lost item request:', error);
+        res.status(500).json({ success: false, message: 'Database error. Please try again later.' });
+    }
+});
+
+// Get all lost items
+app.get('/api/lost-items', async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            `SELECT li.*, s.name as student_name, r.room_number 
+            FROM lost_items li 
+            JOIN students s ON li.usn = s.usn 
+            LEFT JOIN rooms r ON s.room_id = r.room_id 
+            WHERE li.status = "pending"`
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching lost items:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Mark item as found
+app.put('/api/lost-item/found', async (req, res) => {
+    try {
+        const { id, finder_usn } = req.body;
+        
+        if (!id || !finder_usn) {
+            return res.status(400).json({ success: false, message: 'Item ID and finder USN are required' });
+        }
+        
+        // Check if the lost item exists and is still pending
+        const [lostItem] = await db.execute('SELECT usn FROM lost_items WHERE id = ? AND status = "pending"', [id]);
+        if (lostItem.length === 0) {
+            return res.status(404).json({ success: false, message: 'Lost item not found or already resolved' });
+        }
+        
+        // Check if finder exists
+        const [finder] = await db.execute('SELECT name, phone_number FROM students WHERE usn = ?', [finder_usn]);
+        if (finder.length === 0) {
+            return res.status(400).json({ success: false, message: 'Finder student not found' });
+        }
+        
+        // Update the lost item status
+        await db.execute(
+            'UPDATE lost_items SET status = "found", finder_usn = ? WHERE id = ?',
+            [finder_usn, id]
+        );
+        
+        res.json({ 
+            success: true, 
+            message: 'Item marked as found', 
+            finder: {
+                name: finder[0].name,
+                phone_number: finder[0].phone_number
+            }
+        });
+    } catch (error) {
+        console.error('Error marking item as found:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get lost items for a specific student
+app.get('/api/student/lost-items/:usn', async (req, res) => {
+    try {
+        const { usn } = req.params;
+        
+        const [items] = await db.execute(
+            `SELECT li.*, 
+            CASE 
+                WHEN li.finder_usn IS NOT NULL THEN 
+                    (SELECT JSON_OBJECT('name', s.name, 'phone_number', s.phone_number) 
+                     FROM students s WHERE s.usn = li.finder_usn) 
+                ELSE NULL 
+            END as finder_info 
+            FROM lost_items li 
+            WHERE li.usn = ?`,
+            [usn]
+        );
+        
+        // The finder_info is already a JSON object from the database query
+        const formattedItems = items.map(item => ({
+            ...item,
+            finder_info: item.finder_info
+        }));
+        
+        res.json(formattedItems);
+    } catch (error) {
+        console.error('Error fetching student\'s lost items:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Cancel lost item request (for when student finds their own item)
+app.delete('/api/student/lost-item/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { usn } = req.body;
+        
+        if (!id || !usn) {
+            return res.status(400).json({ success: false, message: 'Item ID and student USN are required' });
+        }
+        
+        // Verify the item belongs to the student making the request
+        const [lostItem] = await db.execute('SELECT usn FROM lost_items WHERE id = ?', [id]);
+        
+        if (lostItem.length === 0) {
+            return res.status(404).json({ success: false, message: 'Lost item not found' });
+        }
+        
+        if (lostItem[0].usn !== usn) {
+            return res.status(403).json({ success: false, message: 'You can only cancel your own lost item requests' });
+        }
+        
+        // Delete the lost item
+        await db.execute('DELETE FROM lost_items WHERE id = ?', [id]);
+        
+        res.json({ success: true, message: 'Lost item request cancelled successfully' });
+    } catch (error) {
+        console.error('Error cancelling lost item request:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get all workers
+app.get('/api/admin/workers', async (req, res) => {
+    try {
+        const [workers] = await db.execute('SELECT * FROM workers');
+        res.json(workers);
+    } catch (error) {
+        console.error('Error fetching workers:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Add new worker
+app.post('/api/admin/add-worker', async (req, res) => {
+    try {
+        const { name, phone_number } = req.body;
+        
+        if (!name || !phone_number) {
+            return res.status(400).json({ success: false, message: 'Name and phone number are required' });
+        }
+        
+        await db.execute(
+            'INSERT INTO workers (name, phone_number, is_available) VALUES (?, ?, TRUE)',
+            [name, phone_number]
+        );
+        
+        res.json({ success: true, message: 'Worker added successfully' });
+    } catch (error) {
+        console.error('Error adding worker:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Delete worker
+app.delete('/api/admin/delete-worker', async (req, res) => {
+    try {
+        const { id } = req.body;
+        
+        if (!id) {
+            return res.status(400).json({ success: false, message: 'Worker ID is required' });
+        }
+        
+        // Check if worker exists
+        const [worker] = await db.execute('SELECT id FROM workers WHERE id = ?', [id]);
+        
+        if (worker.length === 0) {
+            return res.status(404).json({ success: false, message: 'Worker not found' });
+        }
+        
+        // Check if worker is assigned to any cleaning requests
+        const [assignedRequests] = await db.execute(
+            'SELECT id FROM cleaning_requests WHERE worker_id = ? AND status = "pending"',
+            [id]
+        );
+        
+        if (assignedRequests.length > 0) {
+            return res.status(400).json({ 
+                success: false, 
+                message: 'Cannot delete worker with pending cleaning requests. Please reassign or complete the requests first.' 
+            });
+        }
+        
+        // Delete the worker
+        await db.execute('DELETE FROM workers WHERE id = ?', [id]);
+        
+        res.json({ success: true, message: 'Worker deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting worker:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Update worker status for expired assignments
+app.post('/api/admin/update-worker-status', async (req, res) => {
+    try {
+        const { worker_ids } = req.body;
+        
+        if (!worker_ids || !Array.isArray(worker_ids) || worker_ids.length === 0) {
+            return res.status(400).json({ success: false, message: 'Worker IDs array is required' });
+        }
+        
+        // Get a connection from the pool for transaction
+        const connection = await db.getConnection();
+        
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+            
+            // Mark expired assignments as completed
+            await connection.execute(
+                'UPDATE worker_assignments SET status = "completed" WHERE worker_id IN (?) AND assignment_date < CURDATE() AND status = "pending"',
+                [worker_ids]
+            );
+            
+            // Update workers availability
+            await connection.execute(
+                'UPDATE workers SET is_available = TRUE WHERE id IN (?) AND id NOT IN (SELECT DISTINCT worker_id FROM worker_assignments WHERE status = "pending")',
+                [worker_ids]
+            );
+            
+            await connection.commit();
+            res.json({ success: true, message: 'Worker status updated successfully' });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            // Release the connection back to the pool
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error updating worker status:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get worker assignments history
+app.get('/api/admin/worker-assignments', async (req, res) => {
+    try {
+        const [assignments] = await db.execute(
+            `SELECT wa.*, w.name as worker_name, cr.usn, s.name as student_name 
+            FROM worker_assignments wa 
+            JOIN workers w ON wa.worker_id = w.id 
+            LEFT JOIN cleaning_requests cr ON wa.cleaning_request_id = cr.id 
+            LEFT JOIN students s ON cr.usn = s.usn 
+            ORDER BY wa.assignment_date DESC, wa.time_slot DESC`
+        );
+        
+        res.json(assignments);
+    } catch (error) {
+        console.error('Error fetching worker assignments:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
     }
 });
 

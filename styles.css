@@ -2,20 +2,26 @@
 
 /* Base Styles */
 body {
-    font-family: 'Segoe UI', Arial, sans-serif;
+    font-family: 'Inter', 'Roboto', 'Segoe UI', Arial, sans-serif;
     margin: 0;
-    padding: 20px;
-    background-color: #f5f7fa;
+    padding: 0;
+    min-height: 100vh;
+    background-color: #191414;
     transition: background-color 0.3s ease;
+    color: #ffffff;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .container {
-    max-width: 800px;
-    margin: 0 auto;
-    background-color: white;
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 1200px;
+    margin: 20px;
+    background-color: #292929;
+    padding: 40px;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
@@ -25,7 +31,7 @@ body {
 
 /* Typography */
 h1, h2 {
-    color: #2c3e50;
+    color: #ffffff;
     transition: color 0.3s ease;
 }
 
@@ -43,7 +49,7 @@ h1:after {
     left: 0;
     width: 60px;
     height: 3px;
-    background-color: #3498db;
+    background-color: #1DB954;
     transition: width 0.3s ease;
 }
 
@@ -61,7 +67,7 @@ h2 {
 .nav-link {
     display: inline-block;
     padding: 10px 18px;
-    color: #3498db;
+    color: #1DB954;
     text-decoration: none;
     margin-bottom: 20px;
     border-radius: 6px;
@@ -78,12 +84,12 @@ h2 {
     left: 0;
     width: 0;
     height: 2px;
-    background-color: #3498db;
+    background-color: #1DB954;
     transition: width 0.3s ease;
 }
 
 .nav-link:hover {
-    background-color: rgba(52, 152, 219, 0.1);
+    background-color: rgba(29, 185, 84, 0.2);
     transform: translateY(-2px);
 }
 
@@ -95,7 +101,7 @@ h2 {
 .form-section {
     margin-bottom: 30px;
     padding: 25px;
-    border: 1px solid #e1e8ed;
+    border: 1px solid #808080;
     border-radius: 8px;
     transition: all 0.3s ease;
     position: relative;
@@ -103,8 +109,8 @@ h2 {
 }
 
 .form-section:hover {
-    border-color: #3498db;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.05);
+    border-color: #1DB954;
+    box-shadow: 0 4px 8px rgba(29, 185, 84, 0.2);
     transform: translateY(-3px);
 }
 
@@ -121,7 +127,7 @@ label {
     display: block;
     margin-bottom: 8px;
     font-weight: 600;
-    color: #34495e;
+    color: #ffffff;
     transition: color 0.3s ease;
 }
 
@@ -133,39 +139,43 @@ textarea,
 select {
     width: 100%;
     padding: 12px;
-    border: 1px solid #ddd;
+    border: 1px solid #808080;
     border-radius: 6px;
     box-sizing: border-box;
     transition: all 0.3s ease;
     font-size: 1rem;
+    background-color: #292929;
+    color: #ffffff;
 }
 
 input:focus,
 textarea:focus,
 select:focus {
-    border-color: #3498db;
-    box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.2);
+    border-color: #1DB954;
+    box-shadow: 0 0 0 3px rgba(29, 185, 84, 0.2);
     outline: none;
 }
 
 /* Buttons */
 button {
-    background-color: #3498db;
-    color: white;
+    background-color: #1DB954;
+    color: #1b1b1b;
     border: none;
-    padding: 12px 24px;
-    border-radius: 6px;
+    padding: 14px 28px;
+    border-radius: 4px;
     cursor: pointer;
-    transition: background-color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease;
+    transition: all 0.3s ease;
     font-weight: 600;
     position: relative;
     overflow: visible;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 button:hover {
-    background-color: #2980b9;
+    background-color: #19a64c;
     transform: translateY(-2px);
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 8px rgba(29, 185, 84, 0.3);
 }
 
 button:active {
@@ -209,12 +219,13 @@ button:focus:not(:active)::after {
 
 .logout-btn {
     float: right;
-    background-color: #e74c3c;
+    background-color: #808080;
+    color: #ffffff;
     transition: all 0.3s ease;
 }
 
 .logout-btn:hover {
-    background-color: #c0392b;
+    background-color: #666666;
 }
 
 /* Success Messages */
@@ -235,9 +246,151 @@ button:focus:not(:active)::after {
     opacity: 1;
 }
 
+/* Lost and Found Styles */
+.lost-found-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .lost-found-container {
+        grid-template-columns: 1fr;
+    }
+}
+
+.lost-item-form {
+    background-color: #333;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.lost-items-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.lost-item-card {
+    background-color: #333;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    position: relative;
+}
+
+.lost-item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.lost-item-header h4 {
+    margin: 0;
+    color: #1DB954;
+}
+
+.lost-item-status {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 0.8em;
+    font-weight: bold;
+}
+
+.lost-item-owner {
+    font-size: 0.9em;
+    color: #ccc;
+}
+
+.status-found {
+    border-left: 4px solid #1DB954;
+}
+
+.status-found .lost-item-status {
+    background-color: #1DB954;
+    color: #000;
+}
+
+.status-pending {
+    border-left: 4px solid #FFA000;
+}
+
+.status-pending .lost-item-status {
+    background-color: #FFA000;
+    color: #000;
+}
+
+.status-closed {
+    border-left: 4px solid #999;
+}
+
+.status-closed .lost-item-status {
+    background-color: #999;
+    color: #000;
+}
+
+.finder-info {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: rgba(29, 185, 84, 0.1);
+    border-radius: 4px;
+}
+
+.found-btn {
+    background-color: #1DB954;
+    color: #000;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.found-btn:hover {
+    background-color: #18a449;
+}
+
+/* Cancel button styling */
+.cancel-btn {
+    background-color: #808080;
+    color: #ffffff;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-top: 10px;
+    font-weight: bold;
+    transition: background-color 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background-color: #666666;
+}
+
+.no-items {
+    text-align: center;
+    color: #999;
+    padding: 15px;
+}
+
+.loading-message {
+    text-align: center;
+    color: #999;
+    padding: 15px;
+}
+
+.my-lost-items, .all-lost-items {
+    margin-bottom: 20px;
+}
+
 /* Admin-specific styles */
 .request-list {
-    border: 1px solid #e1e8ed;
+    border: 1px solid #808080;
     border-radius: 8px;
     margin-top: 15px;
     overflow: hidden;
@@ -254,7 +407,7 @@ button:focus:not(:active)::after {
 }
 
 .request-item:hover {
-    background-color: #f9f9f9;
+    background-color: #1b1b1b;
 }
 
 .request-item:last-child {
@@ -271,19 +424,21 @@ button:focus:not(:active)::after {
 }
 
 .approve-btn {
-    background-color: #27ae60;
+    background-color: #1DB954;
+    color: #1b1b1b;
 }
 
 .approve-btn:hover {
-    background-color: #219653;
+    background-color: #19a64c;
 }
 
 .reject-btn {
-    background-color: #e74c3c;
+    background-color: #808080;
+    color: #ffffff;
 }
 
 .reject-btn:hover {
-    background-color: #c0392b;
+    background-color: #666666;
 }
 
 /* Page Transitions */
@@ -348,18 +503,18 @@ body.fade-in {
 .login-section {
     flex: 1;
     min-width: 300px;
-    padding: 25px;
-    border: 1px solid #e1e8ed;
+    padding: 30px;
+    border: 2px solid #1DB954;
     border-radius: 8px;
     transition: all 0.3s ease;
-    /* No animation by default, only on hover */
-    transform: translateY(0); /* Explicitly set initial position */
-    box-shadow: 0 0 0 rgba(0, 0, 0, 0); /* Initial shadow state */
+    transform: translateY(0);
+    box-shadow: 0 4px 12px rgba(29, 185, 84, 0.1);
+    background-color: #292929;
 }
 
 .login-section:hover {
-    border-color: #3498db;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    border-color: #1DB954;
+    box-shadow: 0 6px 12px rgba(29, 185, 84, 0.2);
     transform: translateY(-5px);
 }
 
@@ -378,14 +533,14 @@ body.fade-in {
 /* Student Info */
 #studentInfo {
     padding: 10px 15px;
-    background-color: rgba(52, 152, 219, 0.1);
+    background-color: rgba(29, 185, 84, 0.1);
     border-radius: 6px;
     margin-bottom: 20px;
     transition: all 0.3s ease;
 }
 
 #studentInfo:hover {
-    background-color: rgba(52, 152, 219, 0.2);
+    background-color: rgba(29, 185, 84, 0.2);
 }
 
 /* Worker Availability Message */
@@ -397,11 +552,72 @@ body.fade-in {
 }
 
 #workerAvailabilityMessage.available {
-    background-color: rgba(39, 174, 96, 0.1);
-    border-left: 4px solid #27ae60;
+    background-color: rgba(29, 185, 84, 0.1);
+    border-left: 4px solid #1DB954;
 }
 
 #workerAvailabilityMessage.unavailable {
-    background-color: rgba(231, 76, 60, 0.1);
-    border-left: 4px solid #e74c3c;
+    background-color: rgba(128, 128, 128, 0.1);
+    border-left: 4px solid #808080;
+}
+
+/* Worker Management Styles */
+.worker-management {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+@media (max-width: 768px) {
+    .worker-management {
+        grid-template-columns: 1fr;
+    }
+}
+
+.worker-list-container {
+    background-color: #333;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.worker-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.worker-item {
+    background-color: #292929;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+.worker-item:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(29, 185, 84, 0.2);
+}
+
+.worker-details {
+    flex: 1;
+}
+
+.delete-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.delete-btn:hover {
+    background-color: #d32f2f;
 }
