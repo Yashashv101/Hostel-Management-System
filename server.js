@@ -1,9 +1,56 @@
 const express = require('express');
 const db = require('./db_config');
 const app = express();
+const path = require('path');
+const port = 3000;
 
 app.use(express.json());
-app.use(express.static('.'));
+
+// Default route should serve index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Serve static files after route definitions
+app.use(express.static(__dirname));
+
+// Other routes (like admin.html)
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'admin-dashboard-fixed.html'));
+});
+
+
+
+// API endpoint for admin to get all students
+app.get('/api/admin/students', async (req, res) => {
+  try {
+    // Get all students with their room information
+    const [students] = await db.execute(
+      `SELECT s.usn, s.name, s.branch, s.phone_number, r.room_number, r.block 
+       FROM students s 
+       LEFT JOIN rooms r ON s.room_id = r.room_id 
+       ORDER BY s.name`
+    );
+    
+    res.json(students);
+  } catch (error) {
+    console.error('Error fetching students data for admin:', error);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+app.listen(port, () => {
+  console.log(`Server running at http://localhost:${port}`);
+});
+
+// Create notices table if it doesn't exist
+db.execute(`
+  CREATE TABLE IF NOT EXISTS notices (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    content TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  )
+`).catch(err => console.error('Error creating notices table:', err));
 
 // Student login
 app.post('/api/student/login', async (req, res) => {
@@ -359,11 +406,12 @@ app.post('/api/complaint', async (req, res) => {
 app.get('/api/admin/complaints', async (req, res) => {
     try {
         const [rows] = await db.execute(
-            'SELECT c.*, s.name as student_name FROM complaints c JOIN students s ON c.usn = s.usn WHERE c.status = "pending"'
+            'SELECT c.*, s.name as student_name, r.room_number FROM complaints c JOIN students s ON c.usn = s.usn LEFT JOIN rooms r ON s.room_id = r.room_id WHERE c.status = "pending"'
         );
         res.json(rows);
     } catch (error) {
-        res.status(500).json({ success: false, message: 'Server error' });
+        console.error('Error fetching complaints:', error);
+        res.status(500).json({ success: false, message: 'Server error', error: error.message });
     }
 });
 
@@ -403,8 +451,8 @@ app.delete('/api/admin/delete-student', async (req, res) => {
         try {
             // Start transaction
             await connection.beginTransaction();
-            
             // First delete any associated cleaning requests to handle foreign key constraints
+            await connection.execute('DELETE FROM lost_items WHERE usn = ?', [usn]);
             await connection.execute('DELETE FROM cleaning_requests WHERE usn = ?', [usn]);
             
             // Then delete any complaints
@@ -412,9 +460,9 @@ app.delete('/api/admin/delete-student', async (req, res) => {
             
             // Remove student from room_occupants
             await connection.execute('DELETE FROM room_occupants WHERE student_usn = ?', [usn]);
-            
             // Delete student from students table
             await connection.execute('DELETE FROM students WHERE usn = ?', [usn]);
+            
             
             // Update room occupancy if student was assigned to a room
             if (roomId) {
@@ -436,6 +484,78 @@ app.delete('/api/admin/delete-student', async (req, res) => {
     } catch (error) {
         console.error('Error deleting student:', error);
         res.status(500).json({ success: false, message: 'Database error. Please try again later.' });
+    }
+});
+
+// Publish notice (Admin only)
+app.post('/api/admin/publish-notice', async (req, res) => {
+    try {
+        const { content } = req.body;
+        
+        if (!content) {
+            return res.status(400).json({ success: false, message: 'Notice content is required' });
+        }
+        
+        // Get a connection from the pool for better error handling
+        const connection = await db.getConnection();
+        
+        try {
+            // Start transaction
+            await connection.beginTransaction();
+            
+            // Insert notice
+            await connection.execute(
+                'INSERT INTO notices (content) VALUES (?)',
+                [content]
+            );
+            
+            await connection.commit();
+            res.json({ success: true, message: 'Notice published successfully' });
+        } catch (error) {
+            await connection.rollback();
+            throw error;
+        } finally {
+            // Release the connection back to the pool
+            connection.release();
+        }
+    } catch (error) {
+        console.error('Error publishing notice:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server error' });
+    }
+});
+
+// Get all notices
+app.get('/api/notices', async (req, res) => {
+    try {
+        const [rows] = await db.execute(
+            'SELECT * FROM notices ORDER BY created_at DESC'
+        );
+        res.json(rows);
+    } catch (error) {
+        console.error('Error fetching notices:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Publish notice (Admin only)
+app.post('/api/admin/publish-notice', async (req, res) => {
+    try {
+        const { content } = req.body;
+        
+        if (!content) {
+            return res.status(400).json({ success: false, message: 'Notice content is required' });
+        }
+        
+        // Insert notice
+        await db.execute(
+            'INSERT INTO notices (content) VALUES (?)',
+            [content]
+        );
+        
+        res.json({ success: true, message: 'Notice published successfully' });
+    } catch (error) {
+        console.error('Error publishing notice:', error);
+        res.status(500).json({ success: false, message: error.message || 'Server error' });
     }
 });
 
@@ -505,11 +625,25 @@ app.get('/api/available-workers-legacy', async (req, res) => {
 // Submit cleaning request
 app.post('/api/cleaning-request', async (req, res) => {
     try {
-        const { usn, roomNumber, date, timeSlot } = req.body;
+        const { usn, date, timeSlot, notes } = req.body;
 
-        if (!usn || !roomNumber || !date || !timeSlot) {
+        if (!usn || !date || !timeSlot) {
             return res.status(400).json({ success: false, message: 'All fields are required' });
         }
+        
+        // Get student's room number from the database
+        const [studentData] = await db.execute('SELECT room_id FROM students WHERE usn = ?', [usn]);
+        if (studentData.length === 0) {
+            return res.status(400).json({ success: false, message: 'Student not found' });
+        }
+        
+        // Get room number from room_id
+        const [roomData] = await db.execute('SELECT room_number FROM rooms WHERE room_id = ?', [studentData[0].room_id]);
+        if (roomData.length === 0) {
+            return res.status(400).json({ success: false, message: 'Room not found for this student' });
+        }
+        
+        const roomNumber = roomData[0].room_number;
 
         const [student] = await db.execute('SELECT usn FROM students WHERE usn = ?', [usn]);
         if (student.length === 0) {
@@ -809,6 +943,48 @@ app.get('/api/admin/worker-assignments', async (req, res) => {
         res.json(assignments);
     } catch (error) {
         console.error('Error fetching worker assignments:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get complaints for a specific student by USN
+app.get('/api/complaints/:usn', async (req, res) => {
+    try {
+        const { usn } = req.params;
+        
+        if (!usn) {
+            return res.status(400).json({ success: false, message: 'Student USN is required' });
+        }
+        
+        const [complaints] = await db.execute(
+            'SELECT * FROM complaints WHERE usn = ? ORDER BY created_at DESC',
+            [usn]
+        );
+        
+        res.json({ success: true, complaints });
+    } catch (error) {
+        console.error('Error fetching student complaints:', error);
+        res.status(500).json({ success: false, message: 'Server error' });
+    }
+});
+
+// Get cleaning requests for a specific student by USN
+app.get('/api/cleaning-requests/:usn', async (req, res) => {
+    try {
+        const { usn } = req.params;
+        
+        if (!usn) {
+            return res.status(400).json({ success: false, message: 'Student USN is required' });
+        }
+        
+        const [requests] = await db.execute(
+            'SELECT * FROM cleaning_requests WHERE usn = ? ORDER BY preferred_time DESC',
+            [usn]
+        );
+        
+        res.json({ success: true, requests });
+    } catch (error) {
+        console.error('Error fetching student cleaning requests:', error);
         res.status(500).json({ success: false, message: 'Server error' });
     }
 });

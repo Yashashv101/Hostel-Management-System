@@ -3,190 +3,1397 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hostel Management System</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <title>HostelPals - Your Hostel Management Solution</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <!-- Flatpickr CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+    <!-- AOS Library for Animations -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
     <style>
-        h1, h2 {
-            text-align: center;
+        :root {
+            --primary: #1DB954;
+            --secondary: #4ccc79;
+            --accent: #1DB954;
+            --light: #191414;
+            --dark: #292929;
+            --success: #4CAF50;
+            --danger: #f44336;
+            --gray: #292929;
         }
-        /* Page-specific styles can go here if needed */
-        button {
+        
+        /* Star Animation Styles */
+        .star-container {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
-            padding: 10px;
-            background-color: #1DB954;
-            color: #1b1b1b;
+            height: 100%;
+            overflow: hidden;
+            z-index: 1;
+        }
+        
+        .star {
+            position: absolute;
+            background-color: #ffffff;
+            border-radius: 50%;
+            filter: blur(1px);
+            box-shadow: 0 0 10px #ffffff, 0 0 20px var(--primary);
+            opacity: 0.7;
+            transition: transform 0.3s ease-out;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            background-color: var(--dark);
+            color: #000000;
+            position: relative;
+        }
+        
+        .fade-in {
+            animation: fadeIn 1s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .navbar {
+            background-color: rgba(25, 20, 20, 0.95);
+            box-shadow: 0 2px 15px rgba(29, 185, 84, 0.2);
+            padding: 15px 0;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-brand {
+            font-weight: 700;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+        
+        .navbar-brand span {
+            color: var(--accent);
+        }
+        
+        .navbar-nav .nav-link {
+            color: #ffffff;
+            font-weight: 500;
+            margin: 0 15px;
+            position: relative;
+            transition: all 0.3s ease;
+        }
+        
+        .navbar-nav .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            background-color: var(--primary);
+            bottom: -5px;
+            left: 0;
+            transition: width 0.3s ease;
+            box-shadow: 0 0 8px var(--primary);
+        }
+        
+        .navbar-nav .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .auth-btn {
+            padding: 8px 20px;
+            border-radius: 50px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            margin: 0 5px;
+        }
+        
+        .btn-student {
+            background-color: var(--primary);
+            color: white;
+            border: 2px solid var(--primary);
+        }
+        
+        .btn-student:hover {
+            background-color: transparent;
+            color: var(--primary);
+        }
+        
+        .btn-admin {
+            background-color: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        
+        .btn-admin:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .hero-section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            padding: 50px 0;
+            background: linear-gradient(135deg, rgba(10, 10, 15, 0.95), rgba(20, 20, 30, 0.95));
+        }
+        
+        
+        
+        /* Additional animations */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.05); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.8; }
+        }
+        
+        .pulse {
+            animation: pulse 3s infinite ease-in-out;
+        }
+        
+        .hero-content h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
+            text-shadow: 0 0 10px rgba(29, 185, 84, 0.3);
+        }
+        
+        .hero-content h1 span {
+            color: var(--primary);
+            position: relative;
+        }
+        
+        .hero-content h1 span::after {
+            content: '';
+            position: absolute;
+            height: 10px;
+            background-color: rgba(76, 201, 240, 0.3);
+            width: 100%;
+            left: 0;
+            bottom: 5px;
+            z-index: -1;
+        }
+        
+        .hero-content p {
+            font-size: 1.2rem;
+            color: #cccccc;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        
+        .cta-btn {
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            margin-right: 15px;
+            margin-bottom: 15px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-btn::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+            transition: all 0.6s;
+        }
+        
+        .cta-btn:hover::before {
+            left: 100%;
+        }
+        
+        .btn-primary-cta {
+            background: linear-gradient(45deg, var(--primary), var(--secondary));
             border: none;
-            border-radius: 4px;
+            color: white;
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.3);
+        }
+        
+        .btn-secondary-cta {
+            background-color: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        
+        .btn-secondary-cta:hover {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .hero-image {
+            position: relative;
+        }
+        
+        .hero-image img {
+            width: 100%;
+            max-width: 600px;
+            border-radius: 10px;
+            box-shadow: 0 20px 30px rgba(0, 0, 0, 0.1);
+            transform: perspective(1000px) rotateY(-5deg);
+            transition: all 0.5s ease;
+        }
+        
+        .hero-image:hover img {
+            transform: perspective(1000px) rotateY(0deg);
+        }
+        
+        .features-section {
+            padding: 100px 0;
+            background-color: var(--gray);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .section-heading {
+            text-align: center;
+            margin-bottom: 60px;
+        }
+        
+        .section-heading h2 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #ffffff;
+            position: relative;
+            display: inline-block;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px rgba(29, 185, 84, 0.3);
+        }
+        
+        .section-heading h2::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 3px;
+            background-color: var(--primary);
+        }
+        
+        .section-heading p {
+            font-size: 1.1rem;
+            color: #cccccc;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        .feature-card {
+            background-color: var(--dark);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            height: 100%;
+            transition: all 0.3s ease;
+            position: relative;
+            z-index: 1;
+            overflow: hidden;
+            border: 1px solid rgba(29, 185, 84, 0.2);
+        }
+        
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 0;
+            background-color: var(--primary);
+            transition: all 0.3s ease;
+            z-index: -1;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-10px);
+        }
+        
+        .feature-card:hover::before {
+            height: 100%;
+        }
+        
+        .feature-icon {
+            margin-bottom: 20px;
+            width: 70px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: rgba(29, 185, 84, 0.1);
+            border-radius: 50%;
+            font-size: 1.8rem;
+            color: var(--primary);
+            transition: all 0.3s ease;
+            box-shadow: 0 0 15px rgba(29, 185, 84, 0.3);
+        }
+        
+        .feature-card:hover .feature-icon {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .feature-card h3 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #ffffff;
+        }
+        
+        .feature-card p {
+            color: #cccccc;
+            margin-bottom: 0;
+            line-height: 1.6;
+        }
+        
+        /* Modal Styling */
+        .modal {
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            border-radius: 15px;
+            border: none;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .modal-header {
+            border-bottom: none;
+            padding: 25px 30px 0;
+        }
+        
+        .modal-title {
+            font-weight: 700;
+            color: var(--primary);
+        }
+        
+        .modal-close {
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            color: var(--danger);
+            transform: rotate(90deg);
+        }
+        
+        .modal-tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .modal-tab {
+            padding: 15px 30px;
+            text-align: center;
+            font-weight: 600;
+            color: #777;
             cursor: pointer;
-            font-size: 16px;
+            transition: all 0.3s ease;
+            flex: 1;
         }
-        button:hover {
-            opacity: 0.9;
+        
+        .modal-tab.active {
+            color: var(--primary);
+            position: relative;
         }
-
-        .error-message {
-            color: #1DB954;
-            margin-top: 5px;
+        
+        .modal-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background-color: var(--primary);
+        }
+        
+        .tab-content {
             display: none;
+            padding: 0 30px 30px;
+        }
+        
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            font-weight: 500;
+            color: #555;
+            margin-bottom: 8px;
+        }
+        
+        .form-control {
+            padding: 12px 15px;
+            border-radius: 8px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.1);
+        }
+        
+        .btn-login {
+            background-color: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            font-weight: 600;
+            border: none;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-login:hover {
+            background-color: var(--secondary);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+        }
+        
+        .error-message {
+            display: none;
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-top: 10px;
+            padding: 8px 12px;
+            background-color: rgba(244, 67, 54, 0.1);
+            border-radius: 5px;
+            border-left: 3px solid var(--danger);
+        }
+        
+        /* Responsive Styling */
+        @media (max-width: 992px) {
+            .hero-content h1 {
+                font-size: 2.8rem;
+            }
+            
+            .hero-content p {
+                font-size: 1.1rem;
+            }
+            
+            .hero-image img {
+                margin-top: 40px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .hero-content h1 {
+                font-size: 2.2rem;
+            }
+            
+            .hero-content p {
+                font-size: 1rem;
+            }
+            
+            .cta-btn {
+                padding: 12px 25px;
+                font-size: 1rem;
+            }
+            
+            .auth-btn {
+                margin-top: 10px;
+            }
+        }
+        
+        @media (max-width: 576px) {
+            .hero-content {
+                text-align: center;
+            }
+            
+            .hero-content h1 {
+                font-size: 2rem;
+            }
+            
+            .cta-buttons {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .cta-btn {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+            
+            .feature-card {
+                padding: 20px;
+            }
+        }
+        
+        /* Footer Styling */
+        .footer {
+            background-color: var(--dark);
+            color: #eee;
+            padding: 60px 0 20px;
+            border-top: 1px solid rgba(29, 185, 84, 0.2);
+        }
+        
+        .footer-logo {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 20px;
+        }
+        
+        .footer-logo span {
+            color: var(--accent);
+        }
+        
+        .footer-text {
+            color: #aaa;
+            margin-bottom: 25px;
+            line-height: 1.6;
+        }
+        
+        .footer-social a {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 40px;
+            height: 40px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            margin-right: 10px;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        
+        .footer-social a:hover {
+            background-color: var(--primary);
+            transform: translateY(-3px);
+        }
+        
+        .footer-links h5 {
+            color: white;
+            font-weight: 600;
+            margin-bottom: 20px;
+            position: relative;
+            padding-bottom: 10px;
+        }
+        
+        .footer-links h5::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            bottom: 0;
+            width: 30px;
+            height: 2px;
+            background-color: var(--accent);
+        }
+        
+        .footer-links ul {
+            list-style: none;
+            padding-left: 0;
+        }
+        
+        .footer-links ul li {
+            margin-bottom: 10px;
+        }
+        
+        .footer-links ul li a {
+            color: #aaa;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            padding-left: 15px;
+        }
+        
+        .footer-links ul li a::before {
+            content: '›';
+            position: absolute;
+            left: 0;
+            color: var(--accent);
+            transition: all 0.3s ease;
+        }
+        
+        .footer-links ul li a:hover {
+            color: white;
+            padding-left: 20px;
+        }
+        
+        .footer-links ul li a:hover::before {
+            left: 5px;
+        }
+        
+        .footer-contact li {
+            margin-bottom: 15px;
+            color: #aaa;
+            display: flex;
+        }
+        
+        .footer-contact li i {
+            color: var(--accent);
+            margin-right: 15px;
+            min-width: 20px;
+        }
+        
+        .footer-divider {
+            height: 1px;
+            background-color: rgba(255, 255, 255, 0.1);
+            margin: 30px 0;
+        }
+        
+        .footer-bottom {
+            text-align: center;
+            color: #aaa;
+            font-size: 0.9rem;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Hostel Management System</h1>
-        
-        <div class="login-sections">
-            <div class="login-section">
-                <h2>Student Login</h2>
-                <form id="studentLoginForm" onsubmit="return handleStudentLogin(event)">
-                    <div class="form-group">
-                        <label for="usn">USN (Unique Student Number)</label>
-                        <input type="text" id="usn" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="dob">Date of Birth</label>
-                        <input type="text" id="dob" required>
-                    </div>
-                    <div class="error-message" id="studentError"></div>
-                    <button type="submit">Login</button>
-                </form>
-            </div>
-
-            <div class="login-section">
-                <h2>Admin Login</h2>
-                <form id="adminLoginForm" onsubmit="return handleAdminLogin(event)">
-                    <div class="form-group">
-                        <label for="username">Username</label>
-                        <input type="text" id="username" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="password">Password</label>
-                        <input type="password" id="password" required>
-                    </div>
-                    <div class="error-message" id="adminError"></div>
-                    <button type="submit">Login</button>
-                </form>
+    
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light fixed-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">Hostel<span>Pals</span></a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav mx-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="#home">Home</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#features">Features</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#about">About</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#contact">Contact</a>
+                    </li>
+                </ul>
+                <div class="d-flex">
+                    <button class="btn auth-btn btn-student" onclick="showStudentLogin()">Student Login</button>
+                    <button class="btn auth-btn btn-admin" onclick="showAdminLogin()">Admin Login</button>
+                </div>
             </div>
         </div>
+    </nav>
 
+    <!-- Hero Section -->
+    <section class="hero-section" id="home">
+        <div id="star-container" class="star-container"></div>
+        <div class="container position-relative" style="z-index: 2;">
+            <div class="row align-items-center">
+                <div class="col-lg-6" data-aos="fade-right" data-aos-duration="1000">
+                    <div class="hero-content">
+                        <h1>Smart <span>Hostel Management</span> Solution</h1>
+                        <p>Streamline your hostel operations with HostelPals, the all-in-one platform designed to simplify room allocation, fee management, and communication between students and administrators.</p>
+                        <div class="cta-buttons">
+                            <button class="btn cta-btn btn-primary-cta" onclick="showStudentLogin()">
+                                <i class="fas fa-user-graduate me-2"></i>Student Portal
+                            </button>
+                            <button class="btn cta-btn btn-secondary-cta" onclick="showAdminLogin()">
+                                <i class="fas fa-user-shield me-2"></i>Admin Dashboard
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6" data-aos="fade-left" data-aos-duration="1000" data-aos-delay="200">
+                    <div class="hero-image">
+                        <img src="iji.png" alt="HostelPals Dashboard" class="img-fluid">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
 
+    <!-- Features Section -->
+    <section class="features-section" id="features">
+        <div class="container">
+            <div class="section-heading" data-aos="fade-up" data-aos-duration="800">
+                <h2>Our Features</h2>
+                <p>Discover how HostelPals enhances hostel management and improves the student experience</p>
+            </div>
+            <div class="row">
+                <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-duration="800" data-aos-delay="100">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-bed"></i>
+                        </div>
+                        <h3>Room Allocation</h3>
+                        <p>Efficient room allocation system that matches students with compatible roommates and preferred room types, minimizing conflicts and maximizing satisfaction.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-duration="800" data-aos-delay="200">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-money-bill-wave"></i>
+                        </div>
+                        <h3>Fee Management</h3>
+                        <p>Streamlined fee collection with automated reminders, multiple payment options, and real-time tracking of dues and payments for better financial control.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-duration="800" data-aos-delay="300">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-comments"></i>
+                        </div>
+                        <h3>Communication Hub</h3>
+                        <p>Centralized platform for announcements, complaints, and feedback, ensuring seamless communication between students, wardens, and hostel administrators.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-duration="800" data-aos-delay="400">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-utensils"></i>
+                        </div>
+                        <h3>Mess Management</h3>
+                        <p>Digital meal planning, menu customization, and feedback system for mess services, helping improve food quality and reducing waste.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-duration="800" data-aos-delay="500">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <h3>Analytics Dashboard</h3>
+                        <p>Visual analytics for occupancy rates, fee collection status, and student feedback, enabling data-driven decisions for hostel management.</p>
+                    </div>
+                </div>
+                <div class="col-md-4 mb-4" data-aos="fade-up" data-aos-duration="800" data-aos-delay="600">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <i class="fas fa-mobile-alt"></i>
+                        </div>
+                        <h3>Mobile Accessible</h3>
+                        <p>Fully responsive platform accessible on any device, allowing students and administrators to stay connected and manage hostel affairs on the go.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer" id="contact">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-4 mb-5 mb-lg-0">
+                    <div class="footer-logo">Hostel<span>Pals</span></div>
+                    <p class="footer-text">Our mission is to revolutionize hostel management with intuitive technology that enhances the living experience for students and simplifies administrative tasks.</p>
+                    <div class="footer-social">
+                        <a href="#"><i class="fab fa-facebook-f"></i></a>
+                        <a href="#"><i class="fab fa-twitter"></i></a>
+                        <a href="#"><i class="fab fa-instagram"></i></a>
+                        <a href="#"><i class="fab fa-linkedin-in"></i></a>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-4 mb-5 mb-md-0">
+                    <div class="footer-links">
+                        <h5>Quick Links</h5>
+                        <ul>
+                            <li><a href="#">Home</a></li>
+                            <li><a href="#">Features</a></li>
+                            <li><a href="#">About Us</a></li>
+                            <li><a href="#">Contact</a></li>
+                            <li><a href="#">Support</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4 mb-5 mb-md-0">
+                    <div class="footer-links">
+                        <h5>Services</h5>
+                        <ul>
+                            <li><a href="#">Room Allocation</a></li>
+                            <li><a href="#">Fee Management</a></li>
+                            <li><a href="#">Complaint System</a></li>
+                            <li><a href="#">Mess Management</a></li>
+                            <li><a href="#">Visitor Management</a></li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-4">
+                    <div class="footer-links">
+                        <h5>Contact Us</h5>
+                        <ul class="footer-contact">
+                            <li>
+                                <i class="fas fa-map-marker-alt"></i>
+                                123 Education Street, University Campus, 10001
+                            </li>
+                            <li>
+                                <i class="fas fa-phone-alt"></i>
+                                +1 234 567 8900
+                            </li>
+                            <li>
+                                <i class="fas fa-envelope"></i>
+                                info@hostelpals.com
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <div class="footer-divider"></div>
+            <div class="footer-bottom">
+                <p>&copy; 2025 HostelPals. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Login Modal -->
+    <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="loginModalLabel">Login to HostelPals</h5>
+                    <button type="button" class="modal-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeLoginModal()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="modal-tabs">
+                        <div class="modal-tab active" onclick="switchTab('studentTab')">Student Login</div>
+                        <div class="modal-tab" onclick="switchTab('adminTab')">Admin Login</div>
+                    </div>
+                    
+                    <!-- Student Login Tab -->
+                    <div id="studentTab" class="tab-content active">
+                        <form onsubmit="return handleStudentLogin(event)">
+                            <div class="form-group">
+                                <label for="usn" class="form-label">University Serial Number (USN)</label>
+                                <input type="text" class="form-control" id="usn" placeholder="Enter your USN">
+                            </div>
+                            <div class="form-group">
+                                <label for="dob" class="form-label">Date of Birth</label>
+                                <input type="text" class="form-control" id="dob" placeholder="Select your date of birth">
+                            </div>
+                            <div class="error-message" id="studentError"></div>
+                            <button type="submit" class="btn btn-login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login as Student
+                            </button>
+                        </form>
+                    </div>
+                    
+                    <!-- Admin Login Tab -->
+                    <div id="adminTab" class="tab-content">
+                        <form onsubmit="return handleAdminLogin(event)">
+                            <div class="form-group">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" placeholder="Enter your username">
+                            </div>
+                            <div class="form-group">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" placeholder="Enter your password">
+                            </div>
+                            <div class="error-message" id="adminError"></div>
+                            <button type="submit" class="btn btn-login">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login as Admin
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
+    <!-- Bootstrap JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <!-- Flatpickr JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <!-- AOS Animation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
+    <!-- Three.js for 3D animations -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Custom JavaScript -->
     <script>
-        // Check if there's a logged-in user
-        function checkLoggedInUser() {
+    // Star Animation
+    document.addEventListener('DOMContentLoaded', function() {
+        const starContainer = document.getElementById('star-container');
+        const stars = [];
+        const numStars = 150; // Number of stars to create
+        const maxStarSize = 3; // Maximum star size in pixels
+        let canvas, ctx;
+        
+        // Create canvas for constellation lines
+        function setupCanvas() {
+            canvas = document.createElement('canvas');
+            canvas.style.position = 'absolute';
+            canvas.style.top = '0';
+            canvas.style.left = '0';
+            canvas.style.width = '100%';
+            canvas.style.height = '100%';
+            canvas.style.zIndex = '0';
+            canvas.style.pointerEvents = 'none';
+            starContainer.appendChild(canvas);
+            ctx = canvas.getContext('2d');
+            
+            // Set canvas size
+            function resizeCanvas() {
+                canvas.width = starContainer.offsetWidth;
+                canvas.height = starContainer.offsetHeight;
+            }
+            
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+        }
+        
+        setupCanvas();
+        
+        // Create stars
+        for (let i = 0; i < numStars; i++) {
+            createStar();
+        }
+        
+        // Function to create a single star
+        function createStar() {
+            const star = document.createElement('div');
+            star.className = 'star';
+            
+            // Random size between 1 and maxStarSize
+            const size = Math.random() * maxStarSize + 1;
+            star.style.width = `${size}px`;
+            star.style.height = `${size}px`;
+            
+            // Random position
+            const x = Math.random() * 100;
+            const y = Math.random() * 100;
+            star.style.left = `${x}%`;
+            star.style.top = `${y}%`;
+            
+            // Random opacity for twinkling effect
+            star.style.opacity = Math.random() * 0.7 + 0.3;
+            
+            // Store star properties for animation
+            const starObj = {
+                element: star,
+                x: x,
+                y: y,
+                size: size,
+                speed: Math.random() * 0.05 + 0.01, // Random speed for natural movement
+                direction: Math.random() * Math.PI * 2, // Random direction in radians
+                twinkleSpeed: Math.random() * 0.01 + 0.005, // Random twinkling speed
+                connections: [] // Will store connected stars
+            };
+            
+            stars.push(starObj);
+            starContainer.appendChild(star);
+        }
+        
+        // Create constellation connections
+        function createConstellations() {
+            // Clear existing connections
+            stars.forEach(star => {
+                star.connections = [];
+            });
+            
+            // Create connections between nearby stars
+            for (let i = 0; i < stars.length; i++) {
+                const star = stars[i];
+                
+                // Find 1-3 closest stars to connect with
+                const numConnections = Math.floor(Math.random() * 3) + 1;
+                const otherStars = [...stars];
+                otherStars.splice(i, 1); // Remove current star
+                
+                // Sort by distance
+                otherStars.sort((a, b) => {
+                    const distA = Math.sqrt(Math.pow(star.x - a.x, 2) + Math.pow(star.y - a.y, 2));
+                    const distB = Math.sqrt(Math.pow(star.x - b.x, 2) + Math.pow(star.y - b.y, 2));
+                    return distA - distB;
+                });
+                
+                // Connect with closest stars
+                for (let j = 0; j < Math.min(numConnections, otherStars.length); j++) {
+                    const otherStar = otherStars[j];
+                    const distance = Math.sqrt(Math.pow(star.x - otherStar.x, 2) + Math.pow(star.y - otherStar.y, 2));
+                    
+                    // Only connect if they're close enough
+                    if (distance < 20) {
+                        star.connections.push(otherStar);
+                    }
+                }
+            }
+        }
+        
+        createConstellations();
+        
+        // Draw constellation lines
+        function drawConstellations() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.strokeStyle = 'rgba(29, 185, 84, 0.2)';
+            ctx.lineWidth = 0.5;
+            
+            stars.forEach(star => {
+                const x1 = (star.x / 100) * canvas.width;
+                const y1 = (star.y / 100) * canvas.height;
+                
+                star.connections.forEach(connectedStar => {
+                    const x2 = (connectedStar.x / 100) * canvas.width;
+                    const y2 = (connectedStar.y / 100) * canvas.height;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(x1, y1);
+                    ctx.lineTo(x2, y2);
+                    ctx.stroke();
+                });
+            });
+        }
+        
+        // Animation loop
+        function animateStars() {
+            stars.forEach(star => {
+                // Move star in its direction
+                star.x += Math.cos(star.direction) * star.speed;
+                star.y += Math.sin(star.direction) * star.speed;
+                
+                // Wrap around edges
+                if (star.x < 0) star.x = 100;
+                if (star.x > 100) star.x = 0;
+                if (star.y < 0) star.y = 100;
+                if (star.y > 100) star.y = 0;
+                
+                // Update position
+                star.element.style.left = `${star.x}%`;
+                star.element.style.top = `${star.y}%`;
+                
+                // Twinkling effect
+                star.element.style.opacity = 0.3 + Math.abs(Math.sin(Date.now() * star.twinkleSpeed)) * 0.7;
+            });
+            
+            // Draw constellation lines
+            drawConstellations();
+            
+            requestAnimationFrame(animateStars);
+        }
+        
+        // Start animation
+        animateStars();
+        
+        // Recreate constellations occasionally
+        setInterval(createConstellations, 10000); // Every 10 seconds
+        
+        // Mouse interaction
+        let mouseX = -100, mouseY = -100;
+        let isMouseMoving = false;
+        let mouseTimer;
+        
+        starContainer.addEventListener('mousemove', function(e) {
+            const containerRect = starContainer.getBoundingClientRect();
+            mouseX = ((e.clientX - containerRect.left) / containerRect.width) * 100;
+            mouseY = ((e.clientY - containerRect.top) / containerRect.height) * 100;
+            
+            isMouseMoving = true;
+            clearTimeout(mouseTimer);
+            
+            // Set a timer to detect when mouse stops moving
+            mouseTimer = setTimeout(() => {
+                isMouseMoving = false;
+            }, 100);
+            
+            // Create a ripple effect
+            createRipple(mouseX, mouseY);
+        });
+        
+        function createRipple(x, y) {
+            const ripple = document.createElement('div');
+            ripple.style.position = 'absolute';
+            ripple.style.left = `${x}%`;
+            ripple.style.top = `${y}%`;
+            ripple.style.width = '5px';
+            ripple.style.height = '5px';
+            ripple.style.borderRadius = '50%';
+            ripple.style.backgroundColor = 'transparent';
+            ripple.style.border = '1px solid rgba(29, 185, 84, 0.5)';
+            ripple.style.transform = 'translate(-50%, -50%)';
+            ripple.style.zIndex = '1';
+            ripple.style.pointerEvents = 'none';
+            
+            starContainer.appendChild(ripple);
+            
+            // Animate the ripple
+            let size = 5;
+            let opacity = 0.5;
+            
+            const rippleAnimation = setInterval(() => {
+                size += 3;
+                opacity -= 0.02;
+                
+                ripple.style.width = `${size}px`;
+                ripple.style.height = `${size}px`;
+                ripple.style.border = `1px solid rgba(29, 185, 84, ${opacity})`;
+                
+                if (opacity <= 0) {
+                    clearInterval(rippleAnimation);
+                    starContainer.removeChild(ripple);
+                }
+            }, 16);
+        }
+        
+        // Update star positions based on mouse position in animation loop
+        function updateStarPositions() {
+            if (!isMouseMoving) return;
+            
+            stars.forEach(star => {
+                // Calculate distance from mouse to star
+                const dx = mouseX - star.x;
+                const dy = mouseY - star.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // If mouse is close to star, push it away
+                if (distance < 20) {
+                    const angle = Math.atan2(dy, dx);
+                    const pushStrength = (20 - distance) * 0.05;
+                    
+                    // Push away from mouse
+                    star.x -= Math.cos(angle) * pushStrength;
+                    star.y -= Math.sin(angle) * pushStrength;
+                    
+                    // Update position immediately for responsive feel
+                    star.element.style.left = `${star.x}%`;
+                    star.element.style.top = `${star.y}%`;
+                }
+            });
+            
+            requestAnimationFrame(updateStarPositions);
+        }
+        
+        updateStarPositions();
+    });
+    // Check if there's a logged-in user (with localStorage availability check)
+    function checkLoggedInUser() {
+        try {
             const currentStudent = localStorage.getItem('currentStudent');
             const currentAdmin = localStorage.getItem('currentAdmin');
             
             if (currentStudent) {
-                window.location.href = 'student.html';
+                window.location.href = 'student-dashboard.html';
             } else if (currentAdmin) {
-                window.location.href = 'admin.html';
+                window.location.href = 'admin-dashboard-fixed.html';
             }
+        } catch (error) {
+            console.log('localStorage is not available in this environment');
+            // Continue without redirecting
         }
+    }
+    
+    // Run on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        checkLoggedInUser();
+        document.body.classList.add('fade-in');
         
-        // Page transition effect
-        document.addEventListener('DOMContentLoaded', function() {
-            document.body.classList.add('fade-in');
-            
-            // No animation on login sections - removed to fix continuous zooming issue
+        // Initialize animations
+        AOS.init({
+            duration: 1000,
+            once: true,
+            easing: 'ease-in-out'
         });
         
-        async function handleStudentLogin(event) {
-            event.preventDefault();
-            const usn = document.getElementById('usn').value;
-            const dob = document.getElementById('dob').value;
-            const errorElement = document.getElementById('studentError');
-
-            // Simple validation
-            if (!usn || !dob) {
-                showError(errorElement, 'Please fill in all fields');
-                return false;
-            }
-
-            try {
-                const response = await fetch('/api/student/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ usn, dob })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    // Add transition effect before redirect
-                    document.querySelector('.container').style.opacity = '0';
-                    document.querySelector('.container').style.transform = 'translateY(-20px)';
-                    
-                    setTimeout(() => {
-                        // Store login status
-                        localStorage.setItem('currentStudent', JSON.stringify(data.student));
-                        window.location.href = 'student.html';
-                    }, 500);
-                } else {
-                    showError(errorElement, data.message || 'Invalid USN or Date of Birth');
-                }
-            } catch (error) {
-                showError(errorElement, 'Server error. Please try again later.');
-            }
-            return false;
-        }
-
-        async function handleAdminLogin(event) {
-            event.preventDefault();
-            const username = document.getElementById('username').value;
-            const password = document.getElementById('password').value;
-            const errorElement = document.getElementById('adminError');
-
-            try {
-                const response = await fetch('/api/admin/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    // Add transition effect before redirect
-                    document.querySelector('.container').style.opacity = '0';
-                    document.querySelector('.container').style.transform = 'translateY(-20px)';
-                    
-                    setTimeout(() => {
-                        localStorage.setItem('currentAdmin', JSON.stringify({
-                            username: username
-                        }));
-                        window.location.href = 'admin.html';
-                    }, 500);
-                } else {
-                    showError(errorElement, data.message || 'Invalid username or password');
-                }
-            } catch (error) {
-                showError(errorElement, 'Server error. Please try again later.');
-            }
-            return false;
-        }
-
-        function showError(element, message) {
-            element.style.display = 'block';
-            element.textContent = message;
-            setTimeout(() => {
-                element.style.display = 'none';
-            }, 3000);
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
+        // Initialize date picker with proper styling
         flatpickr("#dob", {
+            enableTime: false,
             dateFormat: "Y-m-d",
-            maxDate: "today"
+            maxDate: "today",
+            altInput: true,
+            altFormat: "F j, Y"
+        });
+        
+        // Smooth scrolling for navigation links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.querySelector('.navbar');
+            if (window.scrollY > 50) {
+                navbar.style.padding = '10px 0';
+                navbar.style.boxShadow = '0 2px 20px rgba(29, 185, 84, 0.2)';
+            } else {
+                navbar.style.padding = '15px 0';
+                navbar.style.boxShadow = '0 2px 15px rgba(29, 185, 84, 0.2)';
+            }
         });
     });
+    
+    // Modal functions
+    function showLoginModal() {
+        const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
+        loginModal.show();
+    }
+    
+    function closeLoginModal() {
+        const loginModal = bootstrap.Modal.getInstance(document.getElementById('loginModal'));
+        if (loginModal) {
+            loginModal.hide();
+        }
+    }
+    
+    function showStudentLogin() {
+        showLoginModal();
+        switchTab('studentTab');
+    }
+    
+    function showAdminLogin() {
+        showLoginModal();
+        switchTab('adminTab');
+    }
+    
+    function switchTab(tabId) {
+        const tabs = document.querySelectorAll('.modal-tab');
+        const contents = document.querySelectorAll('.tab-content');
+        
+        tabs.forEach(tab => tab.classList.remove('active'));
+        contents.forEach(content => content.classList.remove('active'));
 
+        document.querySelector(`.modal-tab[onclick="switchTab('${tabId}')"]`).classList.add('active');
+        document.getElementById(tabId).classList.add('active');
+    }
+    
+    function showError(element, message) {
+        element.textContent = message;
+        element.style.display = 'block';
+        setTimeout(() => {
+            element.style.display = 'none';
+        }, 3000);
+    }
+    
+    async function handleStudentLogin(event) {
+        event.preventDefault();
+        const usn = document.getElementById('usn').value;
+        const dob = document.getElementById('dob').value;
+        const errorElement = document.getElementById('studentError');
+
+        if (!usn || !dob) {
+            showError(errorElement, 'Please fill in all fields');
+            return false;
+        }
+
+        try {
+            // For demo purposes in sandboxed environments
+            if (usn === "demo" && dob.includes("2000")) {
+                document.querySelector('.container').style.opacity = '0';
+                document.querySelector('.container').style.transform = 'translateY(-20px)';
+                
+                setTimeout(() => {
+                    try {
+                        localStorage.setItem('currentStudent', JSON.stringify({usn: "demo", name: "Demo Student"}));
+                    } catch (error) {
+                        console.log('localStorage is not available in this environment');
+                    }
+                    window.location.href = 'student-dashboard.html';
+                }, 500);
+                return false;
+            }
+            
+            // Normal API call
+            const response = await fetch('/api/student/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ usn, dob })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.querySelector('.container').style.opacity = '0';
+                document.querySelector('.container').style.transform = 'translateY(-20px)';
+                
+                setTimeout(() => {
+                    try {
+                        localStorage.setItem('currentStudent', JSON.stringify(data.student));
+                    } catch (error) {
+                        console.log('localStorage is not available in this environment');
+                    }
+                    window.location.href = 'student-dashboard.html';
+                }, 500);
+            } else {
+                showError(errorElement, data.message || 'Invalid USN or Date of Birth');
+            }
+        } catch (error) {
+            // Handle API errors or show demo message in sandboxed environments
+            showError(errorElement, 'Server error. Try using demo/2000-01-01 for demo access.');
+        }
+        return false;
+    }
+
+    async function handleAdminLogin(event) {
+        event.preventDefault();
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorElement = document.getElementById('adminError');
+
+        if (!username || !password) {
+            showError(errorElement, 'Please fill in all fields');
+            return false;
+        }
+
+        try {
+            // For demo purposes in sandboxed environments
+            if (username === "admin" && password === "admin123") {
+                document.querySelector('.container').style.opacity = '0';
+                document.querySelector('.container').style.transform = 'translateY(-20px)';
+                
+                setTimeout(() => {
+                    try {
+                        localStorage.setItem('currentAdmin', JSON.stringify({ username: "admin" }));
+                    } catch (error) {
+                        console.log('localStorage is not available in this environment');
+                    }
+                    window.location.href = 'admin-dashboard-fixed.html';
+                }, 500);
+                return false;
+            }
+            
+            // Normal API call
+            const response = await fetch('/api/admin/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ username, password })
+            });
+
+            const data = await response.json();
+            if (data.success) {
+                document.querySelector('.container').style.opacity = '0';
+                document.querySelector('.container').style.transform = 'translateY(-20px)';
+                
+                setTimeout(() => {
+                    try {
+                        localStorage.setItem('currentAdmin', JSON.stringify({ username }));
+                    } catch (error) {
+                        console.log('localStorage is not available in this environment');
+                    }
+                    window.location.href = 'admin-dashboard-fixed.html';
+                }, 500);
+            } else {
+                showError(errorElement, data.message || 'Invalid username or password');
+            }
+        } catch (error) {
+            console.error('Login error:', error);
+            showError(errorElement, 'Server error. Try using admin/admin123 for demo access.');
+        }
+        return false;
+    }
     </script>
 </body>
 </html>

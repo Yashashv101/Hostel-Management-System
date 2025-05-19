@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Management - HostelPals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="../styles.css">
+    <style>
+        :root {
+            --primary-color: #1DB954;
+            --secondary-color: #4ccc79;
+            --dark-color: #191414;
+            --light-color: #ffffff;
+            --gray-color: #292929;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Roboto', sans-serif;
+            background-color: #191414;
+            color: var(--light-color);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: var(--gray-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .header h1 {
+            color: var(--primary-color);
+            margin: 0;
+        }
+
+        .back-btn {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+            padding: 8px 15px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        .back-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .back-btn i {
+            margin-right: 5px;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .btn-primary, .btn-secondary {
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            border: none;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background-color: #19a34a;
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            border: 1px solid var(--primary-color);
+            color: var(--primary-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(29, 185, 84, 0.1);
+        }
+
+        .form-container {
+            background-color: rgba(0, 0, 0, 0.2);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background-color: #333;
+            color: white;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .results-container {
+            margin-top: 20px;
+        }
+
+        .student-card {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .student-card h3 {
+            margin-top: 0;
+            color: var(--primary-color);
+        }
+
+        .student-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+        }
+
+        .info-item {
+            margin-bottom: 5px;
+        }
+
+        .info-label {
+            font-weight: 500;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Student Management</h1>
+            <a href="../admin-dashboard.html" class="back-btn"><i class="fas fa-arrow-left"></i> Back to Dashboard</a>
+        </div>
+
+        <div class="action-buttons">
+            <button class="btn-primary" onclick="showAddForm()">Add Student</button>
+            <button class="btn-secondary" onclick="showSearchForm()">Search Student</button>
+        </div>
+
+        <!-- Add Student Form -->
+        <div id="addStudentForm" class="form-container">
+            <h2>Add New Student</h2>
+            <form onsubmit="return addStudent(event)">
+                <div class="form-group">
+                    <label for="studentName">Full Name</label>
+                    <input type="text" id="studentName" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentId">Student ID</label>
+                    <input type="text" id="studentId" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentEmail">Email</label>
+                    <input type="email" id="studentEmail" required>
+                </div>
+                <div class="form-group">
+                    <label for="studentPhone">Phone Number</label>
+                    <input type="tel" id="studentPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="roomNumber">Room Number</label>
+                    <input type="text" id="roomNumber">
+                </div>
+                <div class="form-group">
+                    <label for="joinDate">Join Date</label>
+                    <input type="date" id="joinDate" required>
+                </div>
+                <button type="submit" class="btn-primary">Add Student</button>
+            </form>
+        </div>
+
+        <!-- Search Student Form -->
+        <div id="searchStudentForm" class="form-container">
+            <h2>Search Students</h2>
+            <form onsubmit="return searchStudents(event)">
+                <div class="form-group">
+                    <label for="searchQuery">Search by Name, ID or Room</label>
+                    <input type="text" id="searchQuery">
+                </div>
+                <button type="submit" class="btn-primary">Search</button>
+            </form>
+        </div>
+
+        <!-- Student Results -->
+        <div id="studentResults" class="results-container">
+            <!-- Student results will be displayed here -->
+            <p>No students to display. Add a student or search for existing students.</p>
+        </div>
+    </div>
+
+    <script>
+        function showAddForm() {
+            document.getElementById('addStudentForm').style.display = 'block';
+            document.getElementById('searchStudentForm').style.display = 'none';
+        }
+
+        function showSearchForm() {
+            document.getElementById('addStudentForm').style.display = 'none';
+            document.getElementById('searchStudentForm').style.display = 'block';
+        }
+
+        function addStudent(event) {
+            event.preventDefault();
+            // Add student functionality would be implemented here
+            alert('Student added successfully!');
+            return false;
+        }
+
+        function searchStudents(event) {
+            event.preventDefault();
+            // Search functionality would be implemented here
+            alert('Search functionality would be implemented here');
+            return false;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Dashboard - HostelPals</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Roboto:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <link rel="stylesheet" href="styles.css">
+    <script src="loadCleaningRequests.js"></script>
+    <script src="loadComplaints.js"></script>
+    <style>
+        /* Dashboard specific styles */
+        :root {
+            --primary-color: #1DB954;
+            --secondary-color: #4ccc79;
+            --dark-color: #191414;
+            --light-color: #ffffff;
+            --gray-color: #292929;
+            --sidebar-width: 250px;
+            --header-height: 65px;
+            --content-padding: 25px;
+            --card-border-radius: 8px;
+            --standard-spacing: 20px;
+        }
+
+        body {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            background-color: #191414;
+            color: var(--light-color);
+            font-family: 'Inter', 'Roboto', sans-serif;
+            width: 100%;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Header styles */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 var(--content-padding);
+            height: var(--header-height);
+            background-color: var(--gray-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+        }
+
+        .logo-container h1 {
+            font-size: 1.5rem;
+            margin: 0;
+            color: var(--primary-color);
+            margin-left: 10px;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .notification-icon {
+            position: relative;
+            cursor: pointer;
+            font-size: 1.2rem;
+            color: #ccc;
+        }
+
+        .notification-badge {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background-color: var(--primary-color);
+            color: #000;
+            border-radius: 50%;
+            width: 16px;
+            height: 16px;
+            font-size: 0.7rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .profile-icon {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background-color: #555;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            overflow: hidden;
+        }
+
+        .profile-icon i {
+            font-size: 1.2rem;
+            color: #eee;
+        }
+
+        /* Main layout */
+        .dashboard-container {
+            display: flex;
+            margin-top: var(--header-height);
+            min-height: calc(100vh - var(--header-height));
+            position: relative;
+        }
+
+        /* Sidebar styles */
+        .sidebar {
+            width: var(--sidebar-width);
+            background-color: var(--gray-color);
+            padding: 20px 0;
+            height: calc(100vh - var(--header-height));
+            position: fixed;
+            left: 0;
+            top: var(--header-height);
+            overflow-y: auto;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            z-index: 90;
+        }
+
+        .nav-items {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-item {
+            padding: 12px 25px;
+            display: flex;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-left: 3px solid transparent;
+        }
+
+        .nav-item:hover {
+            background-color: rgba(29, 185, 84, 0.1);
+        }
+
+        .nav-item.active {
+            background-color: rgba(29, 185, 84, 0.2);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .nav-item i {
+            margin-right: 15px;
+            font-size: 1.1rem;
+            color: #ccc;
+            width: 20px;
+            text-align: center;
+        }
+
+        .nav-item.active i {
+            color: var(--primary-color);
+        }
+
+        .nav-item span {
+            font-weight: 500;
+        }
+
+        /* Main content area */
+        .main-content {
+            flex: 1;
+            margin-left: var(--sidebar-width);
+            padding: var(--content-padding);
+            background-color: var(--dark-color);
+            width: calc(100% - var(--sidebar-width));
+            box-sizing: border-box;
+        }
+
+        .welcome-section {
+            margin-bottom: 30px;
+        }
+
+        .welcome-section h2 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+
+        .welcome-section p {
+            color: #aaa;
+            font-size: 1rem;
+        }
+
+        /* Dashboard stats cards */
+        .stats-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: #292929;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .stat-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .stat-card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #eee;
+        }
+
+        .stat-card-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: rgba(29, 185, 84, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .stat-card-icon i {
+            color: var(--primary-color);
+            font-size: 1.2rem;
+        }
+
+        .stat-card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 10px 0;
+            color: #fff;
+        }
+
+        .stat-card-description {
+            color: #aaa;
+            font-size: 0.9rem;
+        }
+
+        /* Section styling */
+        .section-container {
+            background-color: var(--gray-color);
+            border-radius: var(--card-border-radius);
+            padding: var(--content-padding);
+            margin-bottom: var(--standard-spacing);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Notices section */
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--standard-spacing);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 10px;
+        }
+
+        .section-title {
+            font-size: 1.4rem;
+            font-weight: 600;
+        }
+
+        .view-all {
+            color: var(--primary-color);
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .view-all i {
+            margin-left: 5px;
+            font-size: 0.8rem;
+        }
+
+        .notice-item {
+            background-color: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            border-left: 4px solid #1DB954;
+        }
+
+        .notice-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+        }
+
+        .notice-title {
+            font-weight: 600;
+            color: #eee;
+        }
+
+        .notice-tag {
+            font-size: 0.8rem;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background-color: rgba(29, 185, 84, 0.2);
+            color: var(--primary-color);
+        }
+
+        .notice-content {
+            font-size: 1rem;
+            margin-bottom: 10px;
+            line-height: 1.5;
+            color: #ddd;
+        }
+
+        .notice-date {
+            font-size: 0.85rem;
+            color: #aaa;
+            text-align: right;
+        }
+
+        /* Content tabs */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Form styles */
+        .form-section {
+            background-color: var(--gray-color);
+            border-radius: var(--card-border-radius);
+            padding: var(--content-padding);
+            margin-bottom: var(--standard-spacing);
+            border: 1px solid #444;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #eee;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 12px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border: 1px solid #444;
+            border-radius: 4px;
+            color: var(--light-color);
+            font-size: 1rem;
+            transition: border-color 0.3s;
+            box-sizing: border-box;
+        }
+        
+        .form-control:focus {
+            border-color: var(--primary-color);
+            outline: none;
+        }
+        
+        textarea.form-control {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        /* Attendance Section Styles */
+        .attendance-container {
+            padding: 15px 0;
+        }
+        
+        .attendance-status {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .primary-btn {
+            background-color: #1DB954;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: background-color 0.3s;
+        }
+        
+        .primary-btn:hover {
+            background-color: #18a449;
+        }
+        
+        .primary-btn:disabled {
+            background-color: #999;
+            cursor: not-allowed;
+        }
+        
+        .message-box {
+            margin: 15px 0;
+            padding: 10px;
+            border-radius: 4px;
+            display: none;
+        }
+        
+        .message-box.success {
+            display: block;
+            background-color: rgba(29, 185, 84, 0.1);
+            border-left: 4px solid #1DB954;
+            color: #1DB954;
+        }
+        
+        .message-box.error {
+            display: block;
+            background-color: rgba(255, 0, 0, 0.1);
+            border-left: 4px solid #ff3333;
+            color: #ff3333;
+        }
+        
+        .attendance-history {
+            margin-top: 20px;
+        }
+        
+        .history-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .attendance-record {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .attendance-record .date {
+            font-weight: 500;
+        }
+        
+        .attendance-record .status {
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.9rem;
+        }
+        
+        .attendance-record .status.present {
+            background-color: rgba(29, 185, 84, 0.2);
+            color: #1DB954;
+        }
+        
+        .attendance-record .status.absent {
+            background-color: rgba(255, 0, 0, 0.2);
+            color: #ff3333;
+        }
+
+        /* Meal Schedule Styles */
+        .meal-schedule {
+            margin-top: 15px;
+        }
+        
+        .meal-time {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .meal-time:last-child {
+            border-bottom: none;
+        }
+        
+        .meal-name {
+            font-weight: 500;
+        }
+        
+        .meal-hours {
+            color: #aaa;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 992px) {
+            :root {
+                --sidebar-width: 70px;
+            }
+            
+            .sidebar {
+                width: var(--sidebar-width);
+                padding: 20px 0;
+            }
+
+            .nav-item span {
+                display: none;
+            }
+
+            .nav-item i {
+                margin-right: 0;
+                font-size: 1.3rem;
+            }
+
+            .main-content {
+                margin-left: var(--sidebar-width);
+                width: calc(100% - var(--sidebar-width));
+            }
+        }
+
+        @media (max-width: 768px) {
+            :root {
+                --content-padding: 15px;
+            }
+            
+            .stats-cards {
+                grid-template-columns: 1fr;
+            }
+
+            .header {
+                padding: 0 var(--content-padding);
+            }
+
+            .logo-container h1 {
+                font-size: 1.2rem;
+            }
+            
+            .form-section {
+                padding: 15px;
+            }
+        }
+
+        .loading-message {
+            padding: 20px;
+            text-align: center;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo-container">
+            <h1>HostelPals</h1>
+        </div>
+        <div class="header-right">
+            <div class="notification-icon">
+                <i class="fas fa-bell"></i>
+                <span class="notification-badge">3</span>
+            </div>
+            <div class="profile-icon">
+                <i class="fas fa-user"></i>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Dashboard Container -->
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <ul class="nav-items">
+                <li class="nav-item active" onclick="switchTab('dashboard')">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('notices')">
+                    <i class="fas fa-bullhorn"></i>
+                    <span>Notices</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('complaint')">
+                    <i class="fas fa-exclamation-circle"></i>
+                    <span>Complaint Box</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('cleaning')">
+                    <i class="fas fa-broom"></i>
+                    <span>Request Cleaning</span>
+                </li>
+                <li class="nav-item" onclick="switchTab('lost-found')">
+                    <i class="fas fa-search"></i>
+                    <span>Lost & Found</span>
+                </li>
+
+                <li class="nav-item" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Tab (Main Dashboard) -->
+            <div id="dashboard" class="tab-content active">
+                <div class="welcome-section">
+                    <h2 id="welcomeMessage">Welcome back, Student!</h2>
+                    <p>Here's what's happening in your hostel today.</p>
+                </div>
+                
+                <!-- Dashboard Stats Cards - Only showing attendance status and pending requests -->
+                <div class="stats-cards">
+
+                    
+                    <!-- Pending Requests Card -->
+                    <div class="stat-card">
+                        <div class="stat-card-header">
+                            <div class="stat-card-title">Pending Requests</div>
+                            <div class="stat-card-icon">
+                                <i class="fas fa-clipboard-list"></i>
+                            </div>
+                        </div>
+                        <div id="pendingRequestsCount" class="stat-card-value">0</div>
+                        <div class="stat-card-description">Complaints and cleaning requests</div>
+                        <a href="#" class="view-details" onclick="switchTab('complaint')">View details <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                </div>
+                
+                <!-- Mess Timing Section -->
+                <div class="section-container">
+                    <div class="section-header">
+                        <div class="section-title">Mess Timing</div>
+                    </div>
+                    <div class="meal-schedule">
+                        <div class="meal-time">
+                            <div class="meal-name">Breakfast</div>
+                            <div class="meal-hours">7:30 AM - 9:30 AM</div>
+                        </div>
+                        <div class="meal-time">
+                            <div class="meal-name">Lunch</div>
+                            <div class="meal-hours">12:30 PM - 2:30 PM</div>
+                        </div>
+                        <div class="meal-time">
+                            <div class="meal-name">Snacks</div>
+                            <div class="meal-hours">4:30 PM - 5:30 PM</div>
+                        </div>
+                        <div class="meal-time">
+                            <div class="meal-name">Dinner</div>
+                            <div class="meal-hours">7:30 PM - 9:30 PM</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Recent Notices Section -->
+                <div class="section-container">
+                    <div class="section-header">
+                        <div class="section-title">Recent Notices</div>
+                        <a href="#" class="view-all" onclick="switchTab('notices')">View all <i class="fas fa-arrow-right"></i></a>
+                    </div>
+                    <div id="dashboardNoticesList">
+                        <div class="loading-message">Loading notices...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Notices Tab -->
+            <div id="notices" class="tab-content">
+                <div class="section-container">
+                    <div class="section-header">
+                        <h3 class="section-title">All Notices</h3>
+                    </div>
+                    <div id="noticesList" class="notices-list">
+                        <div class="loading-message">Loading notices...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Complaint Box Tab -->
+            <div id="complaint" class="tab-content">
+                <div class="section-container">
+                    <div class="section-header">
+                        <h3 class="section-title">Register Complaint</h3>
+                    </div>
+                    <form id="complaintForm" class="form-section">
+                        <div class="form-group">
+                            <label for="complaintType">Type of Complaint</label>
+                            <select id="complaintType" class="form-control" required>
+                                <option value="">Select type</option>
+                                <option value="maintenance">Maintenance</option>
+                                <option value="facility">Facility</option>
+                                <option value="food">Food</option>
+                                <option value="other">Other</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="complaintDescription">Description</label>
+                            <textarea id="complaintDescription" class="form-control" placeholder="Describe your complaint in detail" required></textarea>
+                        </div>
+                        <button type="submit" class="primary-btn">Submit Complaint</button>
+                        <div id="complaintMessage" class="message-box"></div>
+                    </form>
+                    
+                    <div class="section-header" style="margin-top: 30px;">
+                        <h3 class="section-title">My Complaints</h3>
+                    </div>
+                    <div id="myComplaintsContainer" class="complaints-list">
+                        <!-- Complaints will be loaded here -->
+                        <div class="loading-message">Loading your complaints...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Cleaning Request Tab -->
+            <div id="cleaning" class="tab-content">
+                <div class="section-container">
+                    <div class="section-header">
+                        <h3 class="section-title">Request Room Cleaning</h3>
+                    </div>
+                    <form id="cleaningForm" class="form-section">
+                        <div class="form-group">
+                            <label for="cleaningDate">Preferred Date</label>
+                            <input type="text" id="cleaningDate" class="form-control" placeholder="Select date" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="cleaningTime">Preferred Time</label>
+                            <select id="cleaningTime" class="form-control" required>
+                                <option value="">Select time slot</option>
+                                <option value="08:00:00">8:00 AM - 9:00 AM</option>
+                                <option value="09:00:00">9:00 AM - 10:00 AM</option>
+                                <option value="10:00:00">10:00 AM - 11:00 AM</option>
+                                <option value="11:00:00">11:00 AM - 12:00 PM</option>
+                                <option value="13:00:00">1:00 PM - 2:00 PM</option>
+                                <option value="14:00:00">2:00 PM - 3:00 PM</option>
+                                <option value="15:00:00">3:00 PM - 4:00 PM</option>
+                                <option value="16:00:00">4:00 PM - 5:00 PM</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cleaningNotes">Special Instructions (Optional)</label>
+                            <textarea id="cleaningNotes" class="form-control" placeholder="Any special instructions for the cleaning staff"></textarea>
+                        </div>
+                        <div id="workerAvailability" class="message-box"></div>
+                        <button type="submit" class="primary-btn" id="submitCleaningBtn">Submit Request</button>
+                        <div id="cleaningMessage" class="message-box"></div>
+                    </form>
+                    
+                    <div class="section-header" style="margin-top: 30px;">
+                        <h3 class="section-title">My Cleaning Requests</h3>
+                    </div>
+                    <div id="myCleaningRequestsContainer" class="cleaning-requests-list">
+                        <!-- Cleaning requests will be loaded here -->
+                        <div class="loading-message">Loading your requests...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lost and Found Tab -->
+            <div id="lost-found" class="tab-content">
+                <div class="section-container">
+                    <div class="section-header">
+                        <h3 class="section-title">Lost and Found Items</h3>
+                    </div>
+                    <form id="lostItemForm" class="form-section">
+                        <div class="form-group">
+                            <label for="itemName">Item Name</label>
+                            <input type="text" id="itemName" class="form-control" placeholder="What did you lose?" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="itemDescription">Description</label>
+                            <textarea id="itemDescription" class="form-control" placeholder="Describe the item in detail" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="lastSeen">Last Seen</label>
+                            <input type="text" id="lastSeen" class="form-control" placeholder="Where did you last see it?" required>
+                        </div>
+                        <button type="submit" class="primary-btn">Report Lost Item</button>
+                        <div id="lostItemMessage" class="message-box"></div>
+                    </form>
+                    
+                    <div class="section-header" style="margin-top: 30px;">
+                        <h3 class="section-title">All Lost Items</h3>
+                    </div>
+                    <div id="allLostItemsContainer">
+                        <!-- Lost items will be loaded here -->
+                        <div class="loading-message">Loading lost items...</div>
+                    </div>
+                    
+                    <div class="section-header" style="margin-top: 30px;">
+                        <h3 class="section-title">My Lost Items</h3>
+                    </div>
+                    <div id="myLostItemsContainer">
+                        <!-- My lost items will be loaded here -->
+                        <div class="loading-message">Loading your lost items...</div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="loadComplaints.js"></script>
+    <script>
+        // Tab switching functionality
+        function switchTab(tabId) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabId).classList.add('active');
+            
+            // Update active state in sidebar
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+            event.currentTarget.classList.add('active');
+            
+            // Load content based on tab
+            if (tabId === 'complaint') {
+                loadComplaints();
+            }
+        }
+
+        // Initialize Flatpickr for date inputs
+        document.addEventListener('DOMContentLoaded', function() {
+            // For cleaning date field - min date is today
+            flatpickr("#cleaningDate", {
+                dateFormat: "Y-m-d",
+                minDate: "today",
+                allowInput: true,
+                onChange: function(selectedDates, dateStr, instance) {
+                    checkWorkerAvailability();
+                }
+            });
+            
+            // Check authentication
+            checkAuth();
+            
+            // Initialize attendance button
+            const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+            markAttendanceBtn.addEventListener('click', markAttendance);
+            
+            // Initialize form submissions
+            document.getElementById('complaintForm').addEventListener('submit', submitComplaint);
+            document.getElementById('cleaningForm').addEventListener('submit', submitCleaningRequest);
+            document.getElementById('lostItemForm').addEventListener('submit', submitLostItem);
+        });
+        
+        // Check authentication
+        function checkAuth() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            if (!currentStudent) {
+                window.location.href = 'index.html';
+                return;
+            }
+            document.getElementById('welcomeMessage').innerHTML = `Welcome back, ${currentStudent.name}!`;
+            
+            // Load data for dashboard
+            loadNotices();
+            loadAttendanceStatus();
+            loadAttendanceHistory();
+            loadMyLostItems();
+            loadAllLostItems();
+            
+            // Update pending requests count
+            updatePendingRequestsCount();
+        }
+        
+        // Attendance Functions
+        async function loadAttendanceStatus() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const statusElement = document.getElementById('todayAttendanceStatus');
+            const statusCard = document.getElementById('attendanceStatusCard');
+            const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+            const attendanceTimeInfo = document.querySelector('.attendance-time-info');
+            
+            // Get current time
+            const now = new Date();
+            const hour = now.getHours();
+            
+            // Define time periods for attendance
+            const isBeforeAttendanceTime = hour < 21; // Before 9 PM
+            const isAttendanceTime = hour >= 21 && hour < 22; // Between 9 PM and 10 PM
+            const isAfterAttendanceTime = hour >= 22; // After 10 PM
+            
+            try {
+                const response = await fetch(`/api/attendance/status/${currentStudent.usn}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    // If attendance is already marked
+                    if (result.marked) {
+                        statusElement.textContent = result.status === 'absent' ? 'Absent' : 'Present';
+                        statusElement.style.color = result.status === 'absent' ? '#ff3333' : '#1DB954';
+                        
+                        if (statusCard) {
+                            statusCard.textContent = result.status === 'absent' ? 'Absent' : 'Present';
+                            statusCard.style.color = result.status === 'absent' ? '#ff3333' : '#1DB954';
+                        }
+                        
+                        markAttendanceBtn.disabled = true;
+                        markAttendanceBtn.textContent = 'Attendance Already Marked';
+                        
+                        // Update time info based on current time
+                        attendanceTimeInfo.textContent = 'Your attendance has been recorded for today';
+                    } else {
+                        // If attendance is not marked yet
+                        if (isBeforeAttendanceTime) {
+                            // Before 9 PM
+                            statusElement.textContent = 'Not marked';
+                            statusElement.style.color = '#ff3333';
+                            
+                            if (statusCard) {
+                                statusCard.textContent = 'Not marked';
+                                statusCard.style.color = '#ff3333';
+                            }
+                            
+                            markAttendanceBtn.disabled = true;
+                            markAttendanceBtn.textContent = 'OUTSIDE ATTENDANCE HOURS';
+                            attendanceTimeInfo.textContent = 'Attendance can only be marked between 9 PM and 10 PM';
+                            attendanceTimeInfo.style.color = '#ff9900'; // Orange warning color
+                        } else if (isAttendanceTime) {
+                            // Between 9 PM and 10 PM - Active attendance time
+                            statusElement.textContent = 'Not marked';
+                            statusElement.style.color = '#ff3333';
+                            
+                            if (statusCard) {
+                                statusCard.textContent = 'Not marked';
+                                statusCard.style.color = '#ff3333';
+                            }
+                            
+                            markAttendanceBtn.disabled = false;
+                            markAttendanceBtn.textContent = 'Mark Attendance';
+                            attendanceTimeInfo.textContent = 'Attendance window is OPEN NOW! Please mark your attendance';
+                            attendanceTimeInfo.style.color = '#1DB954'; // Green active color
+                        } else if (isAfterAttendanceTime) {
+                            // After 10 PM - Attendance closed
+                            statusElement.textContent = 'Absent'; // Default to absent if not marked after 10 PM
+                            statusElement.style.color = '#ff3333';
+                            
+                            if (statusCard) {
+                                statusCard.textContent = 'Absent';
+                                statusCard.style.color = '#ff3333';
+                            }
+                            
+                            markAttendanceBtn.disabled = true;
+                            markAttendanceBtn.textContent = 'ATTENDANCE WINDOW CLOSED';
+                            attendanceTimeInfo.textContent = 'Attendance window has closed for today';
+                            attendanceTimeInfo.style.color = '#ff3333'; // Red closed color
+                        }
+                    }
+                } else {
+                    statusElement.textContent = 'Error checking status';
+                    if (statusCard) statusCard.textContent = 'Error';
+                    console.error('Error checking attendance status:', result.message);
+                }
+            } catch (error) {
+                console.error('Error loading attendance status:', error);
+                statusElement.textContent = 'Error checking status';
+                if (statusCard) statusCard.textContent = 'Error';
+            }
+        }
+        
+        async function loadAttendanceHistory() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const historyContainer = document.getElementById('attendanceHistory');
+            
+            try {
+                const response = await fetch(`/api/attendance/history/${currentStudent.usn}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    if (result.history.length === 0) {
+                        historyContainer.innerHTML = '<p class="no-items">No attendance records found.</p>';
+                        return;
+                    }
+                    
+                    const historyHTML = result.history.map(record => {
+                        const date = new Date(record.date).toLocaleDateString();
+                        const statusClass = record.status === 'present' ? 'present' : 'absent';
+                        return `
+                            <div class="attendance-record">
+                                <span class="date">${date}</span>
+                                <span class="status ${statusClass}">${record.status}</span>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    historyContainer.innerHTML = historyHTML;
+                } else {
+                    historyContainer.innerHTML = '<div class="error-message">Error loading attendance history</div>';
+                }
+            } catch (error) {
+                console.error('Error loading attendance history:', error);
+                historyContainer.innerHTML = '<div class="error-message">Error loading attendance history</div>';
+            }
+        }
+        
+        // Function to mark attendance using geolocation
+        async function markAttendance() {
+            const messageBox = document.getElementById('attendanceMessage');
+            const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+            
+            // Clear previous messages
+            messageBox.textContent = '';
+            messageBox.className = 'message-box';
+            
+            // Disable button while processing
+            markAttendanceBtn.disabled = true;
+            markAttendanceBtn.textContent = 'Processing...';
+            
+            // Check if geolocation is supported by the browser
+            if (!navigator.geolocation) {
+                showMessage('error', 'Geolocation is not supported by your browser');
+                resetButton();
+                return;
+            }
+            
+            try {
+                // Get current position
+                navigator.geolocation.getCurrentPosition(async (position) => {
+                    const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+                    const attendanceData = {
+                        usn: currentStudent.usn,
+                        latitude: position.coords.latitude,
+                        longitude: position.coords.longitude
+                    };
+                    
+                    try {
+                        const response = await fetch('/api/attendance/mark', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(attendanceData)
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            showMessage('success', result.message || 'Attendance marked successfully!');
+                            // Update attendance status
+                            loadAttendanceStatus();
+                            loadAttendanceHistory();
+                        } else {
+                            showMessage('error', result.message || 'Failed to mark attendance');
+                        }
+                    } catch (error) {
+                        console.error('Error marking attendance:', error);
+                        showMessage('error', 'Server error. Please try again later.');
+                    } finally {
+                        resetButton();
+                    }
+                }, (error) => {
+                    console.error('Geolocation error:', error);
+                    let errorMessage = 'Failed to get your location';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            errorMessage = 'Location permission denied. Please enable location services.';
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            errorMessage = 'Location information is unavailable.';
+                            break;
+                        case error.TIMEOUT:
+                            errorMessage = 'Location request timed out.';
+                            break;
+                    }
+                    
+                    showMessage('error', errorMessage);
+                    resetButton();
+                });
+            } catch (error) {
+                console.error('Error in geolocation process:', error);
+                showMessage('error', 'An unexpected error occurred. Please try again.');
+                resetButton();
+            }
+        }
+        
+        function showMessage(type, message) {
+            const messageBox = document.getElementById('attendanceMessage');
+            messageBox.textContent = message;
+            messageBox.className = `message-box ${type}`;
+        }
+        function logout() {
+            // Clear any session storage or cookies
+            localStorage.removeItem('currentStudent');
+            // Redirect to login page
+            window.location.href = 'index.html';
+        }
+        function resetButton() {
+            const markAttendanceBtn = document.getElementById('markAttendanceBtn');
+            markAttendanceBtn.disabled = false;
+            markAttendanceBtn.textContent = 'Mark Attendance';
+        }
+        
+        // Function to load notices
+        async function loadNotices() {
+            const noticesContainer = document.getElementById('noticesList');
+            const dashboardNoticesContainer = document.getElementById('dashboardNoticesList');
+            
+            try {
+                const response = await fetch('/api/notices');
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const notices = await response.json();
+                
+                // Check if notices is an array
+                if (!Array.isArray(notices)) {
+                    throw new Error('Invalid response format');
+                }
+                
+                if (notices.length === 0) {
+                    const noNoticesHTML = '<div class="no-notices">No notices available</div>';
+                    noticesContainer.innerHTML = noNoticesHTML;
+                    if (dashboardNoticesContainer) dashboardNoticesContainer.innerHTML = noNoticesHTML;
+                    return;
+                }
+                
+                const noticesHTML = notices.map(notice => {
+                    // Ensure created_at exists and is valid
+                    const dateObj = notice.created_at ? new Date(notice.created_at) : new Date();
+                    const date = dateObj.toLocaleDateString();
+                    const time = dateObj.toLocaleTimeString();
+                    return `
+                        <div class="notice-item">
+                            <div class="notice-header">
+                                <div class="notice-title">${notice.title || 'Notice'}</div>
+                                <div class="notice-tag">${notice.category || 'General'}</div>
+                            </div>
+                            <div class="notice-content">${notice.content || ''}</div>
+                            <div class="notice-date">${date} at ${time}</div>
+                        </div>
+                    `;
+                }).join('');
+                
+                noticesContainer.innerHTML = noticesHTML;
+                
+                // Also update dashboard notices (show only 3 most recent)
+                if (dashboardNoticesContainer) {
+                    const recentNotices = notices.slice(0, 3);
+                    const recentNoticesHTML = recentNotices.map(notice => {
+                        const dateObj = notice.created_at ? new Date(notice.created_at) : new Date();
+                        const date = dateObj.toLocaleDateString();
+                        return `
+                            <div class="notice-item">
+                                <div class="notice-header">
+                                    <div class="notice-title">${notice.title || 'Notice'}</div>
+                                    <div class="notice-tag">${notice.category || 'General'}</div>
+                                </div>
+                                <div class="notice-content">${notice.content || ''}</div>
+                                <div class="notice-date">${date}</div>
+                            </div>
+                        `;
+                    }).join('');
+                    dashboardNoticesContainer.innerHTML = recentNoticesHTML;
+                }
+                
+            } catch (error) {
+                console.error('Error loading notices:', error);
+                const errorHTML = '<div class="error-message">Error loading notices: ' + error.message + '</div>';
+                noticesContainer.innerHTML = errorHTML;
+                if (dashboardNoticesContainer) dashboardNoticesContainer.innerHTML = errorHTML;
+            }
+        }
+
+        // Complaint submission
+        async function submitComplaint(event) {
+            event.preventDefault();
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const messageBox = document.getElementById('complaintMessage');
+            
+            // Clear previous messages
+            messageBox.textContent = '';
+            messageBox.className = 'message-box';
+            
+            const complaintData = {
+                usn: currentStudent.usn,
+                type: document.getElementById('complaintType').value,
+                complaint_text: document.getElementById('complaintDescription').value
+            };
+
+            try {
+                // Send to server
+                const response = await fetch('/api/complaint', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(complaintData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    messageBox.textContent = 'Complaint submitted successfully!';
+                    messageBox.className = 'message-box success';
+                    event.target.reset();
+                    
+                    // Update pending requests count
+                    updatePendingRequestsCount();
+                    
+                    setTimeout(() => {
+                        messageBox.className = 'message-box';
+                    }, 3000);
+                } else {
+                    messageBox.textContent = 'Error: ' + result.message;
+                    messageBox.className = 'message-box error';
+                }
+            } catch (error) {
+                console.error('Error submitting complaint:', error);
+                messageBox.textContent = 'Failed to submit complaint. Please try again.';
+                messageBox.className = 'message-box error';
+            }
+
+            return false;
+        }
+
+        // Cleaning request
+        async function checkWorkerAvailability() {
+            const dateInput = document.getElementById('cleaningDate');
+            const timeInput = document.getElementById('cleaningTime');
+            const messageDiv = document.getElementById('workerAvailability');
+            const submitBtn = document.getElementById('submitCleaningBtn');
+            
+            if (!dateInput.value || !timeInput.value) {
+                messageDiv.style.display = 'none';
+                return;
+            }
+            
+            try {
+                const queryUrl = `/api/available-workers?date=${dateInput.value}&timeSlot=${timeInput.value}`;
+                
+                const response = await fetch(queryUrl);
+                const result = await response.json();
+                
+                messageDiv.style.display = 'block';
+                
+                if (result.success && result.available) {
+                    messageDiv.className = 'message-box success';
+                    messageDiv.innerHTML = `<i class="fas fa-check-circle"></i> Workers are available for this time slot`;
+                    submitBtn.disabled = false;
+                } else {
+                    messageDiv.className = 'message-box error';
+                    messageDiv.innerHTML = `<i class="fas fa-times-circle"></i> No workers available for this time slot. Please select a different time.`;
+                    submitBtn.disabled = true;
+                }
+            } catch (error) {
+                console.error('Error checking worker availability:', error);
+                messageDiv.className = 'message-box error';
+                messageDiv.innerHTML = 'Error checking worker availability. Please try again.';
+            }
+        }
+        
+        async function submitCleaningRequest(event) {
+            event.preventDefault();
+            
+            // Get form elements
+            const dateInput = document.getElementById('cleaningDate');
+            const timeInput = document.getElementById('cleaningTime');
+            const notesInput = document.getElementById('cleaningNotes');
+            const submitBtn = document.getElementById('submitCleaningBtn');
+            const messageBox = document.getElementById('cleaningMessage');
+            
+            // Clear previous messages
+            messageBox.textContent = '';
+            messageBox.className = 'message-box';
+            
+            // Disable button to prevent multiple submissions
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Submitting...';
+            
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const request = {
+                date: dateInput.value,
+                timeSlot: timeInput.value,
+                notes: notesInput.value || '',
+                usn: currentStudent.usn
+            };
+
+            try {
+                const response = await fetch('/api/cleaning-request', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(request)
+                });
+
+                const result = await response.json();
+                
+                // Re-enable the submit button
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Request Cleaning';
+                
+                if (result.success) {
+                    messageBox.textContent = 'Cleaning request submitted successfully!';
+                    messageBox.className = 'message-box success';
+                    event.target.reset();
+                    document.getElementById('workerAvailability').style.display = 'none';
+                    
+                    // Update pending requests count
+                    updatePendingRequestsCount();
+
+                    setTimeout(() => {
+                        messageBox.className = 'message-box';
+                    }, 3000);
+                } else {
+                    messageBox.textContent = 'Error: ' + result.message;
+                    messageBox.className = 'message-box error';
+                }
+            } catch (error) {
+                console.error('Error submitting request:', error);
+                messageBox.textContent = 'Failed to submit request. Please try again.';
+                messageBox.className = 'message-box error';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Request Cleaning';
+            }
+
+            return false;
+        }
+
+        // Lost and Found Functions
+        async function submitLostItem(event) {
+            event.preventDefault();
+            
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const messageBox = document.getElementById('lostItemMessage');
+            
+            // Clear previous messages
+            messageBox.textContent = '';
+            messageBox.className = 'message-box';
+            
+            const lostItemData = {
+                usn: currentStudent.usn,
+                item_name: document.getElementById('itemName').value,
+                description: document.getElementById('itemDescription').value,
+                location: document.getElementById('lastSeen').value
+            };
+
+            try {
+                const response = await fetch('/api/lost-item', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(lostItemData)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Show success message
+                    messageBox.textContent = 'Lost item reported successfully!';
+                    messageBox.className = 'message-box success';
+                    event.target.reset();
+
+                    // Reload lost items lists
+                    loadMyLostItems();
+                    loadAllLostItems();
+
+                    setTimeout(() => {
+                        messageBox.className = 'message-box';
+                    }, 3000);
+                } else {
+                    messageBox.textContent = 'Error: ' + result.message;
+                    messageBox.className = 'message-box error';
+                }
+            } catch (error) {
+                console.error('Error submitting lost item:', error);
+                messageBox.textContent = 'Failed to submit lost item. Please try again.';
+                messageBox.className = 'message-box error';
+            }
+
+            return false;
+        }
+
+        async function loadMyLostItems() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const container = document.getElementById('myLostItemsContainer');
+            
+            try {
+                const response = await fetch(`/api/student/lost-items/${currentStudent.usn}`);
+                const items = await response.json();
+                
+                if (items.length === 0) {
+                    container.innerHTML = '<p class="no-items">You have no reported lost items.</p>';
+                    return;
+                }
+                
+                let html = '';
+                items.forEach(item => {
+                    let statusClass = '';
+                    let statusText = '';
+                    let finderInfo = '';
+                    
+                    if (item.status === 'found') {
+                        statusClass = 'status-found';
+                        statusText = 'Found';
+                        if (item.finder_info) {
+                            finderInfo = `
+                                <div class="finder-info">
+                                    <p><strong>Found by:</strong> ${item.finder_info.name}</p>
+                                    <p><strong>Contact:</strong> ${item.finder_info.phone_number}</p>
+                                </div>
+                            `;
+                        }
+                    } else if (item.status === 'pending') {
+                        statusClass = 'status-pending';
+                        statusText = 'Looking for it';
+                    } else {
+                        statusClass = 'status-closed';
+                        statusText = 'Closed';
+                    }
+                    
+                    // Add cancel button only for pending items
+                    let cancelButton = '';
+                    if (item.status === 'pending') {
+                        cancelButton = `<button onclick="cancelLostItem(${item.id})" class="cancel-btn">I Found It - Cancel Request</button>`;
+                    }
+                    
+                    html += `
+                        <div class="lost-item-card ${statusClass}">
+                            <div class="lost-item-header">
+                                <h4>${item.item_name}</h4>
+                                <span class="lost-item-status">${statusText}</span>
+                            </div>
+                            <p>${item.description || 'No description provided'}</p>
+                            <p><small>Last seen: ${item.location || 'Location not specified'}</small></p>
+                            <p><small>Reported on: ${new Date(item.created_at).toLocaleDateString()}</small></p>
+                            ${finderInfo}
+                            ${cancelButton}
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading your lost items:', error);
+                container.innerHTML = '<p class="error-message">Error loading your lost items. Please refresh the page.</p>';
+            }
+        }
+
+        async function loadAllLostItems() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            const container = document.getElementById('allLostItemsContainer');
+            
+            try {
+                const response = await fetch('/api/lost-items');
+                const items = await response.json();
+                
+                // Filter out the current student's items
+                const otherItems = items.filter(item => item.usn !== currentStudent.usn);
+                
+                if (otherItems.length === 0) {
+                    container.innerHTML = '<p class="no-items">No lost items reported by other students.</p>';
+                    return;
+                }
+                
+                let html = '';
+                otherItems.forEach(item => {
+                    html += `
+                        <div class="lost-item-card">
+                            <div class="lost-item-header">
+                                <h4>${item.item_name}</h4>
+                                <span class="lost-item-owner">Lost by: ${item.student_name} (Room ${item.room_number || 'N/A'})</span>
+                            </div>
+                            <p>${item.description || 'No description provided'}</p>
+                            <p><small>Last seen: ${item.location || 'Location not specified'}</small></p>
+                            <p><small>Reported on: ${new Date(item.created_at).toLocaleDateString()}</small></p>
+                            <button onclick="markAsFound(${item.id})" class="found-btn">I Found This Item</button>
+                        </div>
+                    `;
+                });
+                
+                container.innerHTML = html;
+            } catch (error) {
+                console.error('Error loading lost items:', error);
+                container.innerHTML = '<p class="error-message">Error loading lost items. Please refresh the page.</p>';
+            }
+        }
+
+        async function markAsFound(itemId) {
+            if (confirm('Have you found this item? The owner will be notified with your contact information.')) {
+                const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+                
+                try {
+                    const response = await fetch('/api/lost-item/found', {
+                        method: 'PUT',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            id: itemId,
+                            finder_usn: currentStudent.usn
+                        })
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Thank you! The owner has been notified that you found their item.');
+                        // Reload the lost items lists
+                        loadAllLostItems();
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error marking item as found:', error);
+                    alert('Failed to mark item as found. Please try again.');
+                }
+            }
+            async function cancelLostItem(itemId) {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            
+            if (confirm('Are you sure you want to cancel this lost item request? This will delete the request permanently.')) {
+                try {
+                    const response = await fetch(`/api/student/lost-item/${itemId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            usn: currentStudent.usn
+                        })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        alert('Lost item request cancelled successfully!');
+                        // Reload the lost items list
+                        loadMyLostItems();
+                    } else {
+                        alert('Error: ' + result.message);
+                    }
+                } catch (error) {
+                    console.error('Error cancelling lost item request:', error);
+                    alert('Failed to cancel lost item request. Please try again.');
+                }
+            }
+        }
+    }
+        // Function to update pending requests count
+        async function updatePendingRequestsCount() {
+            const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
+            if (!currentStudent) return;
+            
+            try {
+                let pendingComplaints = 0;
+                let pendingCleaningRequests = 0;
+                
+                try {
+                    // Fetch pending complaints
+                    const complaintsResponse = await fetch(`/api/complaints/${currentStudent.usn}`);
+                    
+                    // Check if response is OK before parsing JSON
+                    if (complaintsResponse.ok) {
+                        const complaintsResult = await complaintsResponse.json();
+                        pendingComplaints = complaintsResult.success ? 
+                            complaintsResult.complaints.filter(c => c.status === 'pending').length : 0;
+                    }
+                } catch (complaintsError) {
+                    console.error('Error fetching complaints:', complaintsError);
+                }
+                
+                try {
+                    // Fetch pending cleaning requests
+                    const cleaningResponse = await fetch(`/api/cleaning-requests/${currentStudent.usn}`);
+                    
+                    // Check if response is OK before parsing JSON
+                    if (cleaningResponse.ok) {
+                        const cleaningResult = await cleaningResponse.json();
+                        pendingCleaningRequests = cleaningResult.success ? 
+                            cleaningResult.requests.filter(r => r.status === 'pending').length : 0;
+                    }
+                } catch (cleaningError) {
+                    console.error('Error fetching cleaning requests:', cleaningError);
+                }
+                
+                const totalPending = pendingComplaints + pendingCleaningRequests;
+                
+                // Update the dashboard card
+                const pendingRequestsCount = document.getElementById('pendingRequestsCount');
+                if (pendingRequestsCount) {
+                    pendingRequestsCount.textContent = totalPending;
+                }
+                
+                return totalPending;
+            } catch (error) {
+                console.error('Error updating pending requests count:', error);
+                return 0;
+            }
+        }
+
+        // Check authentication on page load
+        checkAuth();
+    </script>
+</body>
+</html>
