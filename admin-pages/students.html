@@ -177,8 +177,6 @@
             <button class="btn-primary" onclick="showAddForm()">Add Student</button>
             <button class="btn-secondary" onclick="showSearchForm()">Search Student</button>
         </div>
-
-        <!-- Add Student Form -->
         <div id="addStudentForm" class="form-container">
             <h2>Add New Student</h2>
             <form onsubmit="return addStudent(event)">
@@ -209,8 +207,6 @@
                 <button type="submit" class="btn-primary">Add Student</button>
             </form>
         </div>
-
-        <!-- Search Student Form -->
         <div id="searchStudentForm" class="form-container">
             <h2>Search Students</h2>
             <form onsubmit="return searchStudents(event)">
@@ -221,10 +217,7 @@
                 <button type="submit" class="btn-primary">Search</button>
             </form>
         </div>
-
-        <!-- Student Results -->
         <div id="studentResults" class="results-container">
-            <!-- Student results will be displayed here -->
             <p>No students to display. Add a student or search for existing students.</p>
         </div>
     </div>
@@ -242,14 +235,12 @@
 
         function addStudent(event) {
             event.preventDefault();
-            // Add student functionality would be implemented here
             alert('Student added successfully!');
             return false;
         }
 
         function searchStudents(event) {
             event.preventDefault();
-            // Search functionality would be implemented here
             alert('Search functionality would be implemented here');
             return false;
         }

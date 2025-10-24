@@ -1,4 +1,3 @@
-// Function to load and display cleaning requests with status labels
 async function loadCleaningRequests() {
     const currentStudent = JSON.parse(localStorage.getItem('currentStudent'));
     if (!currentStudent) return;
@@ -19,10 +18,7 @@ async function loadCleaningRequests() {
             cleaningRequestsContainer.innerHTML = '<div class="no-requests">You have no cleaning requests.</div>';
             return;
         }
-        
-        // Generate HTML for cleaning requests with status labels
         const requestsHTML = result.requests.map(request => {
-            // Determine status class and text based on request status
             let statusClass = '';
             let statusText = '';
             let workerInfo = '';
@@ -31,7 +27,6 @@ async function loadCleaningRequests() {
                 case 'approved':
                     statusClass = 'status-approved';
                     statusText = 'Approved';
-                    // Display worker information if available
                     if (request.worker_name && request.worker_id) {
                         workerInfo = `
                             <div class="worker-info">
@@ -53,8 +48,6 @@ async function loadCleaningRequests() {
                     statusClass = 'status-pending';
                     statusText = 'Pending';
             }
-            
-            // Format the date and time
             const date = new Date(request.preferred_time).toLocaleDateString();
             const time = new Date(request.preferred_time).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
             
@@ -73,8 +66,6 @@ async function loadCleaningRequests() {
         }).join('');
         
         cleaningRequestsContainer.innerHTML = requestsHTML;
-        
-        // Add CSS for status labels if not already in styles.css
         const styleElement = document.createElement('style');
         styleElement.textContent = `
             .cleaning-request-item {
@@ -153,36 +144,16 @@ async function loadCleaningRequests() {
         cleaningRequestsContainer.innerHTML = '<div class="error-message">Error loading cleaning requests. Please try again.</div>';
     }
 }
-
-// Add this function to the DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function() {
-    // Check if we're on the student dashboard page
     if (document.getElementById('myCleaningRequestsContainer')) {
-        // Add tab switching event for cleaning tab
         const cleaningTab = document.querySelector('.nav-item[onclick="switchTab(\'cleaning\')"]');
         if (cleaningTab) {
             cleaningTab.addEventListener('click', function() {
                 loadCleaningRequests();
             });
         }
-        
-        // Load cleaning requests if we're already on the cleaning tab
         if (document.getElementById('cleaning').classList.contains('active')) {
             loadCleaningRequests();
         }
     }
 });
-
-// Instructions for implementation:
-// 1. Add this JavaScript file to your project
-// 2. Include it in your student-dashboard.html with:
-//    <script src="loadCleaningRequests.js"></script>
-// 3. Make sure to call loadCleaningRequests() when the cleaning tab is clicked
-// 4. Update your server.js to return the worker information in the cleaning requests API response
-// 5. Ensure your database has a 'status' field in the cleaning_requests table that can be:
-//    - 'pending' (default for new requests)
-//    - 'approved' (when admin approves and assigns a worker)
-//    - 'rejected' (when admin rejects)
-//    - 'completed' (when cleaning is done)
-// 6. Update the server.js endpoint for /api/cleaning-requests/:usn to include worker information
-//    by joining with the workers table when status is 'approved'

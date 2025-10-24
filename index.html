@@ -4,13 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HostelPals - Your Hostel Management Solution</title>
-    <!-- Bootstrap CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
-    <!-- FontAwesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- Flatpickr CSS -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
-    <!-- AOS Library for Animations -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.css" rel="stylesheet">
     <style>
         :root {
@@ -23,8 +19,6 @@
             --danger: #f44336;
             --gray: #292929;
         }
-        
-        /* Star Animation Styles */
         .star-container {
             position: absolute;
             top: 0;
@@ -142,10 +136,6 @@
             padding: 50px 0;
             background: linear-gradient(135deg, rgba(10, 10, 15, 0.95), rgba(20, 20, 30, 0.95));
         }
-        
-        
-        
-        /* Additional animations */
         @keyframes pulse {
             0% { transform: scale(1); opacity: 0.8; }
             50% { transform: scale(1.05); opacity: 1; }
@@ -662,8 +652,6 @@
     </style>
 </head>
 <body>
-    
-    <!-- Navigation Bar -->
     <nav class="navbar navbar-expand-lg navbar-light fixed-top">
         <div class="container">
             <a class="navbar-brand" href="#">Hostel<span>Pals</span></a>
@@ -692,8 +680,6 @@
             </div>
         </div>
     </nav>
-
-    <!-- Hero Section -->
     <section class="hero-section" id="home">
         <div id="star-container" class="star-container"></div>
         <div class="container position-relative" style="z-index: 2;">
@@ -720,8 +706,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Features Section -->
     <section class="features-section" id="features">
         <div class="container">
             <div class="section-heading" data-aos="fade-up" data-aos-duration="800">
@@ -786,8 +770,6 @@
             </div>
         </div>
     </section>
-
-    <!-- Footer -->
     <footer class="footer" id="contact">
         <div class="container">
             <div class="row">
@@ -851,8 +833,6 @@
             </div>
         </div>
     </footer>
-
-    <!-- Login Modal -->
     <div class="modal fade" id="loginModal" tabindex="-1" aria-labelledby="loginModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
@@ -867,8 +847,6 @@
                         <div class="modal-tab active" onclick="switchTab('studentTab')">Student Login</div>
                         <div class="modal-tab" onclick="switchTab('adminTab')">Admin Login</div>
                     </div>
-                    
-                    <!-- Student Login Tab -->
                     <div id="studentTab" class="tab-content active">
                         <form onsubmit="return handleStudentLogin(event)">
                             <div class="form-group">
@@ -885,8 +863,6 @@
                             </button>
                         </form>
                     </div>
-                    
-                    <!-- Admin Login Tab -->
                     <div id="adminTab" class="tab-content">
                         <form onsubmit="return handleAdminLogin(event)">
                             <div class="form-group">
@@ -908,26 +884,17 @@
         </div>
     </div>
 
-    <!-- Bootstrap JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
-    <!-- Flatpickr JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
-    <!-- AOS Animation Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/aos/2.3.4/aos.js"></script>
-    <!-- Three.js for 3D animations -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-    
-    <!-- Custom JavaScript -->
     <script>
-    // Star Animation
     document.addEventListener('DOMContentLoaded', function() {
         const starContainer = document.getElementById('star-container');
         const stars = [];
-        const numStars = 150; // Number of stars to create
-        const maxStarSize = 3; // Maximum star size in pixels
+        const numStars = 150;
+        const maxStarSize = 3; 
         let canvas, ctx;
-        
-        // Create canvas for constellation lines
         function setupCanvas() {
             canvas = document.createElement('canvas');
             canvas.style.position = 'absolute';
@@ -939,8 +906,6 @@
             canvas.style.pointerEvents = 'none';
             starContainer.appendChild(canvas);
             ctx = canvas.getContext('2d');
-            
-            // Set canvas size
             function resizeCanvas() {
                 canvas.width = starContainer.offsetWidth;
                 canvas.height = starContainer.offsetHeight;
@@ -951,76 +916,53 @@
         }
         
         setupCanvas();
-        
-        // Create stars
         for (let i = 0; i < numStars; i++) {
             createStar();
         }
-        
-        // Function to create a single star
         function createStar() {
             const star = document.createElement('div');
             star.className = 'star';
-            
-            // Random size between 1 and maxStarSize
             const size = Math.random() * maxStarSize + 1;
             star.style.width = `${size}px`;
             star.style.height = `${size}px`;
-            
-            // Random position
             const x = Math.random() * 100;
             const y = Math.random() * 100;
             star.style.left = `${x}%`;
             star.style.top = `${y}%`;
-            
-            // Random opacity for twinkling effect
             star.style.opacity = Math.random() * 0.7 + 0.3;
-            
-            // Store star properties for animation
             const starObj = {
                 element: star,
                 x: x,
                 y: y,
                 size: size,
-                speed: Math.random() * 0.05 + 0.01, // Random speed for natural movement
-                direction: Math.random() * Math.PI * 2, // Random direction in radians
-                twinkleSpeed: Math.random() * 0.01 + 0.005, // Random twinkling speed
-                connections: [] // Will store connected stars
+                speed: Math.random() * 0.05 + 0.01,
+                direction: Math.random() * Math.PI * 2, 
+                twinkleSpeed: Math.random() * 0.01 + 0.005, 
+                connections: [] 
             };
             
             stars.push(starObj);
             starContainer.appendChild(star);
         }
         
-        // Create constellation connections
         function createConstellations() {
-            // Clear existing connections
             stars.forEach(star => {
                 star.connections = [];
             });
             
-            // Create connections between nearby stars
             for (let i = 0; i < stars.length; i++) {
                 const star = stars[i];
-                
-                // Find 1-3 closest stars to connect with
                 const numConnections = Math.floor(Math.random() * 3) + 1;
                 const otherStars = [...stars];
-                otherStars.splice(i, 1); // Remove current star
-                
-                // Sort by distance
+                otherStars.splice(i, 1);
                 otherStars.sort((a, b) => {
                     const distA = Math.sqrt(Math.pow(star.x - a.x, 2) + Math.pow(star.y - a.y, 2));
                     const distB = Math.sqrt(Math.pow(star.x - b.x, 2) + Math.pow(star.y - b.y, 2));
                     return distA - distB;
                 });
-                
-                // Connect with closest stars
                 for (let j = 0; j < Math.min(numConnections, otherStars.length); j++) {
                     const otherStar = otherStars[j];
                     const distance = Math.sqrt(Math.pow(star.x - otherStar.x, 2) + Math.pow(star.y - otherStar.y, 2));
-                    
-                    // Only connect if they're close enough
                     if (distance < 20) {
                         star.connections.push(otherStar);
                     }
@@ -1029,8 +971,6 @@
         }
         
         createConstellations();
-        
-        // Draw constellation lines
         function drawConstellations() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             ctx.strokeStyle = 'rgba(29, 185, 84, 0.2)';
@@ -1051,41 +991,23 @@
                 });
             });
         }
-        
-        // Animation loop
         function animateStars() {
             stars.forEach(star => {
-                // Move star in its direction
                 star.x += Math.cos(star.direction) * star.speed;
                 star.y += Math.sin(star.direction) * star.speed;
-                
-                // Wrap around edges
                 if (star.x < 0) star.x = 100;
                 if (star.x > 100) star.x = 0;
                 if (star.y < 0) star.y = 100;
                 if (star.y > 100) star.y = 0;
-                
-                // Update position
                 star.element.style.left = `${star.x}%`;
                 star.element.style.top = `${star.y}%`;
-                
-                // Twinkling effect
                 star.element.style.opacity = 0.3 + Math.abs(Math.sin(Date.now() * star.twinkleSpeed)) * 0.7;
             });
-            
-            // Draw constellation lines
             drawConstellations();
-            
             requestAnimationFrame(animateStars);
         }
-        
-        // Start animation
         animateStars();
-        
-        // Recreate constellations occasionally
-        setInterval(createConstellations, 10000); // Every 10 seconds
-        
-        // Mouse interaction
+        setInterval(createConstellations, 10000);
         let mouseX = -100, mouseY = -100;
         let isMouseMoving = false;
         let mouseTimer;
@@ -1097,13 +1019,9 @@
             
             isMouseMoving = true;
             clearTimeout(mouseTimer);
-            
-            // Set a timer to detect when mouse stops moving
             mouseTimer = setTimeout(() => {
                 isMouseMoving = false;
             }, 100);
-            
-            // Create a ripple effect
             createRipple(mouseX, mouseY);
         });
         
@@ -1122,8 +1040,6 @@
             ripple.style.pointerEvents = 'none';
             
             starContainer.appendChild(ripple);
-            
-            // Animate the ripple
             let size = 5;
             let opacity = 0.5;
             
@@ -1141,27 +1057,18 @@
                 }
             }, 16);
         }
-        
-        // Update star positions based on mouse position in animation loop
         function updateStarPositions() {
             if (!isMouseMoving) return;
             
             stars.forEach(star => {
-                // Calculate distance from mouse to star
                 const dx = mouseX - star.x;
                 const dy = mouseY - star.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
-                
-                // If mouse is close to star, push it away
                 if (distance < 20) {
                     const angle = Math.atan2(dy, dx);
                     const pushStrength = (20 - distance) * 0.05;
-                    
-                    // Push away from mouse
                     star.x -= Math.cos(angle) * pushStrength;
                     star.y -= Math.sin(angle) * pushStrength;
-                    
-                    // Update position immediately for responsive feel
                     star.element.style.left = `${star.x}%`;
                     star.element.style.top = `${star.y}%`;
                 }
@@ -1172,7 +1079,6 @@
         
         updateStarPositions();
     });
-    // Check if there's a logged-in user (with localStorage availability check)
     function checkLoggedInUser() {
         try {
             const currentStudent = localStorage.getItem('currentStudent');
@@ -1185,23 +1091,16 @@
             }
         } catch (error) {
             console.log('localStorage is not available in this environment');
-            // Continue without redirecting
         }
     }
-    
-    // Run on page load
     document.addEventListener('DOMContentLoaded', function() {
         checkLoggedInUser();
         document.body.classList.add('fade-in');
-        
-        // Initialize animations
         AOS.init({
             duration: 1000,
             once: true,
             easing: 'ease-in-out'
         });
-        
-        // Initialize date picker with proper styling
         flatpickr("#dob", {
             enableTime: false,
             dateFormat: "Y-m-d",
@@ -1209,8 +1108,6 @@
             altInput: true,
             altFormat: "F j, Y"
         });
-        
-        // Smooth scrolling for navigation links
         document.querySelectorAll('a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 e.preventDefault();
@@ -1219,8 +1116,6 @@
                 });
             });
         });
-        
-        // Navbar scroll effect
         window.addEventListener('scroll', function() {
             const navbar = document.querySelector('.navbar');
             if (window.scrollY > 50) {
@@ -1232,8 +1127,6 @@
             }
         });
     });
-    
-    // Modal functions
     function showLoginModal() {
         const loginModal = new bootstrap.Modal(document.getElementById('loginModal'));
         loginModal.show();
@@ -1302,8 +1195,6 @@
                 }, 500);
                 return false;
             }
-            
-            // Normal API call
             const response = await fetch('/api/student/login', {
                 method: 'POST',
                 headers: {
@@ -1329,7 +1220,6 @@
                 showError(errorElement, data.message || 'Invalid USN or Date of Birth');
             }
         } catch (error) {
-            // Handle API errors or show demo message in sandboxed environments
             showError(errorElement, 'Server error. Try using demo/2000-01-01 for demo access.');
         }
         return false;
@@ -1347,7 +1237,6 @@
         }
 
         try {
-            // For demo purposes in sandboxed environments
             if (username === "admin" && password === "admin123") {
                 document.querySelector('.container').style.opacity = '0';
                 document.querySelector('.container').style.transform = 'translateY(-20px)';
@@ -1362,8 +1251,6 @@
                 }, 500);
                 return false;
             }
-            
-            // Normal API call
             const response = await fetch('/api/admin/login', {
                 method: 'POST',
                 headers: {
