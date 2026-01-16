@@ -59,7 +59,6 @@ app.post('/api/student/login', async (req, res) => {
 });
 app.post('/api/admin/login', async (req, res) => {
     const { username, password } = req.body;
-    // In production, use proper authentication and hashed passwords
     if (username === 'Admin' && password === 'admin123') {
         res.json({ success: true });
     } else {
